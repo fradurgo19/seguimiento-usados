@@ -75,22 +75,22 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
             vehicle.fields.FechaCompromisoComercial?.split("T")[0] || "",
           FechaInicioCiclo:
             vehicle.fields.FechaInicioCiclo?.split("T")[0] || "",
-          F1: vehicle.fields.F1 || "Pendiente",
-          F2: vehicle.fields.F2 || "Pendiente",
-          F3: vehicle.fields.F3 || "Pendiente",
-          F4: vehicle.fields.F4 || "Pendiente",
-          F5: vehicle.fields.F5 || "Pendiente",
-          F6: vehicle.fields.F6 || "Pendiente",
-          F7: vehicle.fields.F7 || "Pendiente",
-          F8: vehicle.fields.F8 || "Pendiente",
-          F9: vehicle.fields.F9 || "Pendiente",
-          F10: vehicle.fields.F10 || "Pendiente",
-          F11: vehicle.fields.F11 || "Pendiente",
-          F12: vehicle.fields.F12 || "Pendiente",
-          F13: vehicle.fields.F13 || "Pendiente",
-          F14: vehicle.fields.F14 || "Pendiente",
-          F15: vehicle.fields.F15 || "Pendiente",
-          F16: vehicle.fields.F16 || "Pendiente",
+          F1: vehicle.fields.F1 || "0%",
+          F2: vehicle.fields.F2 || "0%",
+          F3: vehicle.fields.F3 || "0%",
+          F4: vehicle.fields.F4 || "0%",
+          F5: vehicle.fields.F5 || "0%",
+          F6: vehicle.fields.F6 || "0%",
+          F7: vehicle.fields.F7 || "0%",
+          F8: vehicle.fields.F8 || "0%",
+          F9: vehicle.fields.F9 || "0%",
+          F10: vehicle.fields.F10 || "0%",
+          F11: vehicle.fields.F11 || "0%",
+          F12: vehicle.fields.F12 || "0%",
+          F13: vehicle.fields.F13 || "0%",
+          F14: vehicle.fields.F14 || "0%",
+          F15: vehicle.fields.F15 || "0%",
+          F16: vehicle.fields.F16 || "0%",
           Sede: vehicle.fields.Sede,
           Ciclo: vehicle.fields.Ciclo,
           FechaFinalAlistamiento:
@@ -98,22 +98,22 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
         }
       : {
           Prioridad: 2,
-          F1: "Pendiente",
-          F2: "Pendiente",
-          F3: "Pendiente",
-          F4: "Pendiente",
-          F5: "Pendiente",
-          F6: "Pendiente",
-          F7: "Pendiente",
-          F8: "Pendiente",
-          F9: "Pendiente",
-          F10: "Pendiente",
-          F11: "Pendiente",
-          F12: "Pendiente",
-          F13: "Pendiente",
-          F14: "Pendiente",
-          F15: "Pendiente",
-          F16: "Pendiente",
+          F1: "0%",
+          F2: "0%",
+          F3: "0%",
+          F4: "0%",
+          F5: "0%",
+          F6: "0%",
+          F7: "0%",
+          F8: "0%",
+          F9: "0%",
+          F10: "0%",
+          F11: "0%",
+          F12: "0%",
+          F13: "0%",
+          F14: "0%",
+          F15: "0%",
+          F16: "0%",
           Ciclo: "Ciclo 1",
         },
   });
@@ -127,7 +127,7 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
     }
   };
 
-  const faseOptions = ["Pendiente", "En Proceso", "Completado"];
+  const faseOptions = ["0%", "50%", "100%"];
 
   // Modelos reales de maquinaria de Partequipos
   const modeloOptions = [
@@ -542,8 +542,8 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
               <div>
                 <div className="mb-6 p-4 bg-blue-50 rounded-lg">
                   <p className="text-sm text-blue-800">
-                    <strong>Instrucciones:</strong> Selecciona el estado de cada
-                    fase del alistamiento. El % de avance se calculará
+                    <strong>Instrucciones:</strong> Selecciona el porcentaje de cada
+                    fase del alistamiento (0%, 50%, 100%). El % de avance total se calculará
                     automáticamente en SharePoint.
                   </p>
                 </div>

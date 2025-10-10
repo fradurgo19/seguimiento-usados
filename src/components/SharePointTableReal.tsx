@@ -277,24 +277,24 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
                             <div className="grid grid-cols-4 gap-2">
                               {Array.from({ length: 16 }, (_, i) => i + 1).map(
                                 (num) => {
-                                  const estado =
-                                    item.fields[`F${num}`] || "Pendiente";
+                                  const porcentaje =
+                                    item.fields[`F${num}`] || "0%";
                                   const bgColor =
-                                    estado === "Completado"
+                                    porcentaje === "100%"
                                       ? "bg-green-500"
-                                      : estado === "En Proceso"
+                                      : porcentaje === "50%"
                                       ? "bg-blue-500"
                                       : "bg-gray-300";
                                   return (
                                     <div
                                       key={`F${num}`}
                                       className="text-center"
-                                      title={`F${num}: ${estado}`}
+                                      title={`F${num}: ${porcentaje}`}
                                     >
                                       <div
                                         className={`${bgColor} text-white text-xs font-bold rounded px-2 py-1`}
                                       >
-                                        F{num}
+                                        {porcentaje}
                                       </div>
                                     </div>
                                   );
@@ -304,15 +304,15 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
                             <div className="flex gap-4 text-xs mt-3">
                               <div className="flex items-center gap-1">
                                 <div className="w-3 h-3 bg-green-500 rounded"></div>
-                                <span>Completado</span>
+                                <span>100%</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                                <span>En Proceso</span>
+                                <span>50%</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <div className="w-3 h-3 bg-gray-300 rounded"></div>
-                                <span>Pendiente</span>
+                                <span>0%</span>
                               </div>
                             </div>
                           </div>

@@ -366,7 +366,7 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
           {Array.from({ length: 16 }, (_, i) => i + 1).map((num) => {
             const completadas = items.filter(
-              (item) => item.fields[`F${num}`] === "Completado"
+              (item) => item.fields[`F${num}`] === "100%"
             ).length;
             const porcentaje = (completadas / items.length) * 100;
             return (
