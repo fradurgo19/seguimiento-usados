@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./context/AuthContext";
 import LoginButton from "./components/LoginButton";
 import SharePointTableReal from "./components/SharePointTableReal";
 import DashboardReal from "./components/DashboardReal";
 import VehicleFormReal from "./components/VehicleFormReal";
+import DashboardFilters, { FilterState } from "./components/DashboardFilters";
 import {
   sharePointService,
   SharePointListItem,
@@ -23,6 +24,18 @@ function AppContent() {
   const [showForm, setShowForm] = useState(false);
   const [editingVehicle, setEditingVehicle] =
     useState<SharePointListItem | null>(null);
+  const [filters, setFilters] = useState<FilterState>({
+    sede: "",
+    asesor: "",
+    cliente: "",
+    fase: "",
+    observaciones: "",
+    ciclo: "",
+    fechaCompromisoDesde: "",
+    fechaCompromisoHasta: "",
+    fechaInicioDesde: "",
+    fechaInicioHasta: "",
+  });
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -38,6 +51,66 @@ function AppContent() {
     setItems(realItems);
     setUseMockData(true);
   };
+
+  // Filtrar items
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      // Filtro por Sede
+      if (filters.sede && item.fields.Sede !== filters.sede) return false;
+
+      // Filtro por Asesor
+      if (filters.asesor && item.fields.Asesor !== filters.asesor) return false;
+
+      // Filtro por Cliente
+      if (filters.cliente && item.fields.Title !== filters.cliente) return false;
+
+      // Filtro por Fase
+      if (filters.fase) {
+        const faseValue = item.fields[filters.fase];
+        // Puedes agregar lógica adicional aquí si quieres filtrar por estado de la fase
+      }
+
+      // Filtro por Observaciones
+      if (
+        filters.observaciones &&
+        item.fields.Observaciones !== filters.observaciones
+      )
+        return false;
+
+      // Filtro por Ciclo
+      if (filters.ciclo && item.fields.Ciclo !== filters.ciclo) return false;
+
+      // Filtro por Fecha de Compromiso
+      if (filters.fechaCompromisoDesde || filters.fechaCompromisoHasta) {
+        const fechaCompromiso = new Date(
+          item.fields.FechaCompromisoComercial
+        );
+        if (filters.fechaCompromisoDesde) {
+          const desde = new Date(filters.fechaCompromisoDesde);
+          if (fechaCompromiso < desde) return false;
+        }
+        if (filters.fechaCompromisoHasta) {
+          const hasta = new Date(filters.fechaCompromisoHasta);
+          if (fechaCompromiso > hasta) return false;
+        }
+      }
+
+      // Filtro por Fecha de Inicio de Ciclo
+      if (filters.fechaInicioDesde || filters.fechaInicioHasta) {
+        const fechaInicio = new Date(item.fields.FechaInicioCiclo);
+        if (filters.fechaInicioDesde) {
+          const desde = new Date(filters.fechaInicioDesde);
+          if (fechaInicio < desde) return false;
+        }
+        if (filters.fechaInicioHasta) {
+          const hasta = new Date(filters.fechaInicioHasta);
+          if (fechaInicio > hasta) return false;
+        }
+      }
+
+      return true;
+    });
+  }, [items, filters]);
 
   const loadRealData = async () => {
     try {
@@ -242,16 +315,27 @@ function AppContent() {
             <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
             <p className="text-gray-600">Cargando datos...</p>
           </div>
-        ) : currentView === "dashboard" ? (
-          <DashboardReal items={items} />
         ) : (
-          <SharePointTableReal
-            items={items}
-            useMockData={useMockData}
-            onEdit={setEditingVehicle}
-            onDelete={handleDeleteVehicle}
-            onRefresh={useMockData ? loadMockData : loadRealData}
-          />
+          <>
+            {currentView === "dashboard" && (
+              <DashboardFilters
+                items={items}
+                filters={filters}
+                onFilterChange={setFilters}
+              />
+            )}
+            {currentView === "dashboard" ? (
+              <DashboardReal items={filteredItems} />
+            ) : (
+              <SharePointTableReal
+                items={filteredItems}
+                useMockData={useMockData}
+                onEdit={setEditingVehicle}
+                onDelete={handleDeleteVehicle}
+                onRefresh={useMockData ? loadMockData : loadRealData}
+              />
+            )}
+          </>
         )}
       </main>
 

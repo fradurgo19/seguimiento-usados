@@ -432,6 +432,165 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
           )}
         </div>
       </div>
+
+      {/* Tabla Detallada con Fases */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="p-6 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Tabla Detallada - Progreso de Fases por Vehículo
+          </h3>
+          <p className="text-sm text-gray-600 mt-1">
+            Vista completa del estado de cada fase (F1-F16) por vehículo
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase sticky left-0 bg-gray-50">
+                  Prioridad
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Serie
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  OTT
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Modelo
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Fecha Compromiso
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Cliente
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Asesor
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  % Avance
+                </th>
+                {Array.from({ length: 16 }, (_, i) => i + 1).map((num) => (
+                  <th
+                    key={`F${num}`}
+                    className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase"
+                  >
+                    F{num}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {items.map((item) => {
+                const formatDate = (dateString: string) => {
+                  try {
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString("es-CO", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    });
+                  } catch {
+                    return "-";
+                  }
+                };
+
+                const getPrioridadBadge = (prioridad: number) => {
+                  if (prioridad === 1)
+                    return "bg-red-100 text-red-800 border-red-300";
+                  if (prioridad === 2)
+                    return "bg-yellow-100 text-yellow-800 border-yellow-300";
+                  return "bg-green-100 text-green-800 border-green-300";
+                };
+
+                const getFaseColor = (porcentaje: string) => {
+                  if (porcentaje === "100%") return "bg-green-500 text-white";
+                  if (porcentaje === "50%") return "bg-yellow-500 text-white";
+                  return "bg-red-500 text-white";
+                };
+
+                return (
+                  <tr key={item.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 sticky left-0 bg-white">
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-bold rounded border ${getPrioridadBadge(
+                          item.fields.Prioridad
+                        )}`}
+                      >
+                        {item.fields.Prioridad}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {item.fields.Serie}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {item.fields.OTT}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {item.fields.Modelo}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {formatDate(item.fields.FechaCompromisoComercial)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {item.fields.Title}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {item.fields.Asesor}
+                    </td>
+                    <td className="px-4 py-3 text-sm font-bold text-gray-900 whitespace-nowrap">
+                      {item.fields.PorcentajeAvanceTotal || 0}%
+                    </td>
+                    {Array.from({ length: 16 }, (_, i) => i + 1).map((num) => {
+                      const porcentaje = item.fields[`F${num}`] || "0%";
+                      return (
+                        <td
+                          key={`${item.id}-F${num}`}
+                          className="px-3 py-3 text-center"
+                        >
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-bold rounded ${getFaseColor(
+                              porcentaje
+                            )}`}
+                          >
+                            {porcentaje}
+                          </span>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        
+        {/* Leyenda */}
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+          <div className="flex items-center gap-6 text-sm">
+            <span className="font-medium text-gray-700">Leyenda de Fases:</span>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex px-2 py-1 text-xs font-bold rounded bg-green-500 text-white">
+                100%
+              </span>
+              <span className="text-gray-600">Completada</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex px-2 py-1 text-xs font-bold rounded bg-yellow-500 text-white">
+                50%
+              </span>
+              <span className="text-gray-600">En Progreso</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex px-2 py-1 text-xs font-bold rounded bg-red-500 text-white">
+                0%
+              </span>
+              <span className="text-gray-600">No Iniciada</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
