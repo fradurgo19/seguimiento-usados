@@ -29,13 +29,15 @@ function AppContent() {
     sede: "",
     asesor: "",
     cliente: "",
+    serie: "",
     fase: "",
     observaciones: "",
     ciclo: "",
     fechaCompromisoDesde: "",
     fechaCompromisoHasta: "",
-    fechaInicioDesde: "",
-    fechaInicioHasta: "",
+    fechaFinalDesde: "",
+    fechaFinalHasta: "",
+    porcentajeAvance: "",
   });
 
   useEffect(() => {
@@ -65,6 +67,9 @@ function AppContent() {
 
       // Filtro por Cliente
       if (filters.cliente && getFieldValue(item.fields, "Title") !== filters.cliente) return false;
+
+      // Filtro por Serie
+      if (filters.serie && getFieldValue(item.fields, "Serie") !== filters.serie) return false;
 
       // Filtro por Fase
       if (filters.fase) {
@@ -103,25 +108,46 @@ function AppContent() {
         // Si el campo no tiene valor, incluir el registro (no excluir por falta de fecha)
       }
 
-      // Filtro por Fecha de Inicio de Ciclo (solo si el campo tiene valor)
-      if (filters.fechaInicioDesde || filters.fechaInicioHasta) {
-        const fechaInicioValue = getFieldValue(item.fields, "FechaInicioCiclo");
+      // Filtro por Fecha Final Alistamiento (solo si el campo tiene valor)
+      if (filters.fechaFinalDesde || filters.fechaFinalHasta) {
+        const fechaFinalValue = getFieldValue(item.fields, "FechaFinalAlistamiento");
         // Solo filtrar si el campo tiene un valor válido
-        if (fechaInicioValue) {
-          const fechaInicio = new Date(fechaInicioValue);
-          if (isNaN(fechaInicio.getTime())) return true; // Si la fecha es inválida, incluir el registro
+        if (fechaFinalValue) {
+          const fechaFinal = new Date(fechaFinalValue);
+          if (isNaN(fechaFinal.getTime())) return true; // Si la fecha es inválida, incluir el registro
           
-          if (filters.fechaInicioDesde) {
-            const desde = new Date(filters.fechaInicioDesde);
-            if (fechaInicio < desde) return false;
+          if (filters.fechaFinalDesde) {
+            const desde = new Date(filters.fechaFinalDesde);
+            if (fechaFinal < desde) return false;
           }
-          if (filters.fechaInicioHasta) {
-            const hasta = new Date(filters.fechaInicioHasta);
+          if (filters.fechaFinalHasta) {
+            const hasta = new Date(filters.fechaFinalHasta);
             hasta.setHours(23, 59, 59, 999); // Incluir todo el día
-            if (fechaInicio > hasta) return false;
+            if (fechaFinal > hasta) return false;
           }
         }
         // Si el campo no tiene valor, incluir el registro (no excluir por falta de fecha)
+      }
+
+      // Filtro por % de Avance
+      if (filters.porcentajeAvance) {
+        // Helper para obtener porcentaje de avance
+        const getPorcentajeAvance = (fields: Record<string, any>): number => {
+          let porcentaje = getFieldValue(fields, "PorcentajeAvanceTotal");
+          
+          if (typeof porcentaje === 'string') {
+            porcentaje = parseFloat(porcentaje.replace('%', '').replace(/[^0-9.]/g, '')) || 0;
+          } else {
+            porcentaje = Number(porcentaje) || 0;
+          }
+          
+          return porcentaje;
+        };
+
+        const avance = getPorcentajeAvance(item.fields);
+        if (filters.porcentajeAvance === "100" && avance !== 100) return false;
+        if (filters.porcentajeAvance === ">0" && (avance === 0 || avance === 100)) return false;
+        if (filters.porcentajeAvance === "0" && avance !== 0) return false;
       }
 
       return true;
@@ -184,7 +210,7 @@ function AppContent() {
       setItems([...items, newItem]);
       setShowForm(false);
       alert(
-        "Vehículo agregado (modo prueba). En producción se guardará en SharePoint."
+        "Equipo agregado (modo prueba). En producción se guardará en SharePoint."
       );
     } else {
       // Guardar en SharePoint - Convertir nombres amigables a nombres internos
@@ -219,7 +245,7 @@ function AppContent() {
           sharePointFields.field_8 = data.Observaciones; // Observaciones
         }
         if (data.Ciclo) {
-          sharePointFields.field_29 = data.Ciclo; // Ciclo
+          sharePointFields.field_29 = `Ciclo ${data.Ciclo}`; // Ciclo - Formato: "Ciclo 17"
         }
 
         // Fases F1-F16 (field_11 a field_26)
@@ -233,12 +259,12 @@ function AppContent() {
         await sharePointService.createListItem(sharePointFields);
         await loadRealData();
         setShowForm(false);
-        alert("Vehículo agregado exitosamente");
+        alert("Equipo agregado exitosamente");
       } catch (error: any) {
         console.error("Error adding vehicle:", error);
         const errorMessage = error.response?.data?.error?.message || error.message || "Error desconocido";
         console.error("Error completo:", error.response?.data);
-        alert(`Error al agregar vehículo: ${errorMessage}. Revisa la consola para más detalles.`);
+        alert(`Error al agregar equipo: ${errorMessage}. Revisa la consola para más detalles.`);
       }
     }
   };
@@ -271,7 +297,7 @@ function AppContent() {
       setItems(updatedItems);
       setEditingVehicle(null);
       alert(
-        "Vehículo actualizado (modo prueba). En producción se guardará en SharePoint."
+        "Equipo actualizado (modo prueba). En producción se guardará en SharePoint."
       );
     } else {
       // Actualizar en SharePoint - Convertir nombres amigables a nombres internos
@@ -306,7 +332,7 @@ function AppContent() {
           sharePointFields.field_8 = data.Observaciones; // Observaciones
         }
         if (data.Ciclo) {
-          sharePointFields.field_29 = data.Ciclo; // Ciclo
+          sharePointFields.field_29 = `Ciclo ${data.Ciclo}`; // Ciclo - Formato: "Ciclo 17"
         }
 
         // Fases F1-F16 (field_11 a field_26)
@@ -317,37 +343,46 @@ function AppContent() {
           }
         }
 
+        console.log(`📤 Enviando actualización para item ID: ${editingVehicle.id}`);
+        console.log(`📋 Item completo:`, editingVehicle);
+        console.log(`📋 Datos a enviar:`, sharePointFields);
+        
+        // Validar que el ID existe y es válido
+        if (!editingVehicle.id || editingVehicle.id.trim() === '') {
+          throw new Error('El ID del item no es válido');
+        }
+        
         await sharePointService.updateListItem(editingVehicle.id, sharePointFields);
         await loadRealData();
         setEditingVehicle(null);
-        alert("Vehículo actualizado exitosamente");
+        alert("Equipo actualizado exitosamente");
       } catch (error: any) {
         console.error("Error updating vehicle:", error);
         const errorMessage = error.response?.data?.error?.message || error.message || "Error desconocido";
         console.error("Error completo:", error.response?.data);
-        alert(`Error al actualizar vehículo: ${errorMessage}. Revisa la consola para más detalles.`);
+        alert(`Error al actualizar equipo: ${errorMessage}. Revisa la consola para más detalles.`);
       }
     }
   };
 
   const handleDeleteVehicle = async (vehicleId: string) => {
-    if (!confirm("¿Estás seguro de eliminar este vehículo?")) return;
+    if (!confirm("¿Estás seguro de eliminar este equipo?")) return;
 
     if (useMockData) {
       // Simular eliminación en mock
       setItems(items.filter((item) => item.id !== vehicleId));
       alert(
-        "Vehículo eliminado (modo prueba). En producción se eliminará de SharePoint."
+        "Equipo eliminado (modo prueba). En producción se eliminará de SharePoint."
       );
     } else {
       // Eliminar de SharePoint
       try {
         await sharePointService.deleteListItem(vehicleId);
         await loadRealData();
-        alert("Vehículo eliminado exitosamente");
+        alert("Equipo eliminado exitosamente");
       } catch (error) {
         console.error("Error deleting vehicle:", error);
-        alert("Error al eliminar vehículo. Verifica los permisos.");
+        alert("Error al eliminar equipo. Verifica los permisos.");
       }
     }
   };
@@ -408,7 +443,7 @@ function AppContent() {
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
             >
               <Plus className="w-5 h-5" />
-              Agregar Vehículo
+              Agregar Equipo
             </button>
           </div>
         </div>

@@ -54,14 +54,14 @@ const Dashboard: React.FC<DashboardProps> = ({ items }) => {
     { name: "Pendiente", value: stats.pendientes, color: "#f59e0b" },
   ];
 
-  // Datos para gráfico de vehículos por responsable
-  const vehiculosPorResponsable = items.reduce((acc: any, item) => {
+  // Datos para gráfico de equipos por responsable
+  const equiposPorResponsable = items.reduce((acc: any, item) => {
     const responsable = item.fields.Responsable || "Sin asignar";
     acc[responsable] = (acc[responsable] || 0) + 1;
     return acc;
   }, {});
 
-  const responsablesData = Object.entries(vehiculosPorResponsable).map(
+  const responsablesData = Object.entries(equiposPorResponsable).map(
     ([name, value]) => ({
       name,
       cantidad: value,
@@ -100,7 +100,7 @@ const Dashboard: React.FC<DashboardProps> = ({ items }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">
-                Total Vehículos
+                Total Equipos
               </p>
               <p className="text-3xl font-bold text-gray-900 mt-2">
                 {stats.total}
@@ -218,7 +218,7 @@ const Dashboard: React.FC<DashboardProps> = ({ items }) => {
         {/* Gráfico de Responsables */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Vehículos por Responsable
+            Equipos por Responsable
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={responsablesData}>

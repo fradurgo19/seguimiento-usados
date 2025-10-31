@@ -3,9 +3,9 @@
  * Muestra las columnas más importantes
  */
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { SharePointListItem } from "../services/sharePointService";
-import { Edit2, Trash2, TestTube2, ChevronDown, ChevronUp } from "lucide-react";
+import { Edit2, Trash2, TestTube2, ChevronDown, ChevronUp, Search, X } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { getFieldValue, calcularPorcentajeAvance } from "../utils/sharePointFieldMapping";
@@ -25,6 +25,7 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
   onDelete,
 }) => {
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [serieFilter, setSerieFilter] = useState<string>("");
 
   // Función helper para obtener porcentaje de avance
   const getPorcentajeAvance = (fields: Record<string, any>) => {
@@ -40,8 +41,26 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
     return porcentaje;
   };
 
+  // Extraer series únicas para el filtro
+  const seriesUnicas = useMemo(() => {
+    return [...new Set(items.map((i) => {
+      const serie = getFieldValue(i.fields, "Serie");
+      return serie;
+    }).filter(Boolean))].sort();
+  }, [items]);
+
+  // Filtrar items por serie si hay filtro activo (búsqueda por coincidencia parcial)
+  const filteredItems = useMemo(() => {
+    if (!serieFilter) return items;
+    return items.filter((item) => {
+      const serie = String(getFieldValue(item.fields, "Serie") || "").toLowerCase();
+      const filtro = serieFilter.toLowerCase();
+      return serie.includes(filtro);
+    });
+  }, [items, serieFilter]);
+
   // Ordenar items por % Avance (menor a mayor)
-  const sortedItems = [...items].sort((a, b) => {
+  const sortedItems = [...filteredItems].sort((a, b) => {
     const avanceA = getPorcentajeAvance(a.fields);
     const avanceB = getPorcentajeAvance(b.fields);
     return avanceA - avanceB;
@@ -56,17 +75,7 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
     }
   };
 
-  const getPrioridadColor = (prioridad: number) => {
-    if (prioridad === 1) return "bg-red-100 text-red-800";
-    if (prioridad === 2) return "bg-yellow-100 text-yellow-800";
-    return "bg-green-100 text-green-800";
-  };
-
-  const getPrioridadText = (prioridad: number) => {
-    if (prioridad === 1) return "Alta";
-    if (prioridad === 2) return "Media";
-    return "Baja";
-  };
+  // Prioridad es solo un número, sin colores ni texto especial
 
   const toggleRow = (id: string) => {
     setExpandedRow(expandedRow === id ? null : id);
@@ -97,7 +106,55 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
                   Título
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Serie
+                  <div className="space-y-2">
+                    <div>Serie</div>
+                    <div className="relative">
+                      <div className="flex items-center gap-1">
+                        <Search className="w-3 h-3 text-gray-400 absolute left-2 pointer-events-none" />
+                        <input
+                          type="text"
+                          value={serieFilter}
+                          onChange={(e) => setSerieFilter(e.target.value)}
+                          placeholder="Buscar serie..."
+                          className="w-full pl-7 pr-6 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        {serieFilter && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSerieFilter("");
+                            }}
+                            className="absolute right-2 text-gray-400 hover:text-gray-600"
+                            title="Limpiar filtro"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                      {seriesUnicas.length > 0 && (
+                        <details className="mt-1">
+                          <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+                            Ver todas ({seriesUnicas.length})
+                          </summary>
+                          <div className="mt-1 max-h-32 overflow-y-auto border border-gray-200 rounded bg-white shadow-sm">
+                            {seriesUnicas.map((serie) => (
+                              <button
+                                key={serie}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSerieFilter(serie);
+                                }}
+                                className="w-full text-left px-2 py-1 text-xs hover:bg-blue-50 text-gray-700"
+                              >
+                                {serie}
+                              </button>
+                            ))}
+                          </div>
+                        </details>
+                      )}
+                    </div>
+                  </div>
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Modelo
@@ -142,13 +199,8 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
                       {getFieldValue(item.fields, "Sede") || "-"}
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPrioridadColor(
-                          Number(getFieldValue(item.fields, "Prioridad")) || 0
-                        )}`}
-                      >
-                        {getPrioridadText(Number(getFieldValue(item.fields, "Prioridad")) || 0)} (
-                        {getFieldValue(item.fields, "Prioridad") || 0})
+                      <span className="inline-flex px-2 py-1 text-xs font-medium text-gray-900">
+                        {Number(getFieldValue(item.fields, "Prioridad")) || 0}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm">
@@ -365,7 +417,7 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
 
       {sortedItems.length === 0 && (
         <div className="text-center py-12 bg-white rounded-lg">
-          <p className="text-gray-500">No hay vehículos registrados</p>
+          <p className="text-gray-500">No hay equipos registrados</p>
         </div>
       )}
     </div>

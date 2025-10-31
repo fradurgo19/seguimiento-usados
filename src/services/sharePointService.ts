@@ -199,14 +199,33 @@ class SharePointService {
       const siteId = await this.getSiteId();
       const listId = await this.getListId(siteId);
 
+      console.log(`🔄 Actualizando item ID: ${itemId}`);
+      console.log(`📝 Campos a actualizar:`, fields);
+      console.log(`🔗 URL completa: /sites/${siteId}/lists/${listId}/items/${itemId}/fields`);
+
+      // Microsoft Graph API - PATCH directo a fields
       const response = await this.axiosInstance.patch(
         `/sites/${siteId}/lists/${listId}/items/${itemId}/fields`,
-        fields
+        fields,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
       );
 
+      console.log(`✅ Item actualizado exitosamente`);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error actualizando item:", error);
+      console.error("Detalles del error:", {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        url: error.config?.url,
+        method: error.config?.method,
+        itemId: itemId,
+      });
       throw error;
     }
   }

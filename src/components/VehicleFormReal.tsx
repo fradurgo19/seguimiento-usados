@@ -1,10 +1,10 @@
 /**
- * Formulario para agregar/editar vehículos
+ * Formulario para agregar/editar equipos
  * Basado en la estructura real de SharePoint
  */
 
 import React, { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { X, Save, Loader2 } from "lucide-react";
 import { SharePointListItem } from "../services/sharePointService";
 
@@ -43,7 +43,7 @@ interface FormData {
   F15: string;
   F16: string;
   Sede: string;
-  Ciclo: string;
+  Ciclo: number;
   FechaFinalAlistamiento: string;
 }
 
@@ -60,6 +60,7 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
     register,
     handleSubmit,
     formState: { errors },
+    control,
   } = useForm<FormData>({
     defaultValues: vehicle
       ? {
@@ -92,12 +93,12 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
           F15: vehicle.fields.F15 || "0%",
           F16: vehicle.fields.F16 || "0%",
           Sede: vehicle.fields.Sede,
-          Ciclo: vehicle.fields.Ciclo,
+          Ciclo: vehicle.fields.Ciclo ? (typeof vehicle.fields.Ciclo === 'string' ? Number(vehicle.fields.Ciclo.replace('Ciclo ', '')) || 1 : Number(vehicle.fields.Ciclo) || 1) : 1,
           FechaFinalAlistamiento:
             vehicle.fields.FechaFinalAlistamiento?.split("T")[0] || "",
         }
       : {
-          Prioridad: 2,
+          Prioridad: 0,
           F1: "0%",
           F2: "0%",
           F3: "0%",
@@ -114,7 +115,7 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
           F14: "0%",
           F15: "0%",
           F16: "0%",
-          Ciclo: "Ciclo 1",
+          Ciclo: "1",
         },
   });
 
@@ -233,7 +234,7 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900">
-            {isEditing ? "Editar Vehículo" : "Agregar Nuevo Vehículo"}
+            {isEditing ? "Editar Equipo" : "Agregar Nuevo Equipo"}
           </h2>
           <button
             onClick={onCancel}
@@ -279,15 +280,15 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
                 {/* Título */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Título (Placa) <span className="text-red-500">*</span>
+                    Cliente <span className="text-red-500">*</span>
                   </label>
                   <input
                     {...register("Title", {
-                      required: "El título es obligatorio",
+                      required: "El cliente es obligatorio",
                     })}
                     type="text"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="ABC123"
+                    placeholder="Ingrese el nombre del cliente"
                   />
                   {errors.Title && (
                     <p className="mt-1 text-sm text-red-600">
@@ -392,12 +393,12 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
                   <input
                     {...register("Prioridad", {
                       required: "La prioridad es obligatoria",
-                      min: { value: 1, message: "Mínimo 1" },
-                      max: { value: 5, message: "Máximo 5" },
+                      valueAsNumber: true,
                     })}
                     type="number"
+                    step="1"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="1 (más alta) - 5 (más baja)"
+                    placeholder="Ingrese un número"
                   />
                   {errors.Prioridad && (
                     <p className="mt-1 text-sm text-red-600">
@@ -436,16 +437,23 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Ciclo <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <input
                     {...register("Ciclo", {
                       required: "El ciclo es obligatorio",
+                      valueAsNumber: true,
+                      min: { value: 1, message: "El ciclo debe ser mayor a 0" },
                     })}
+                    type="number"
+                    min="1"
+                    step="1"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="Ciclo 1">Ciclo 1</option>
-                    <option value="Ciclo 2">Ciclo 2</option>
-                    <option value="Ciclo 3">Ciclo 3</option>
-                  </select>
+                    placeholder="Ingrese el número de ciclo"
+                  />
+                  {errors.Ciclo && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.Ciclo.message}
+                    </p>
+                  )}
                 </div>
 
                 {/* Fecha de Solicitud */}
@@ -507,18 +515,6 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
                   )}
                 </div>
 
-                {/* Fecha Final Alistamiento */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Fecha Final Alistamiento
-                  </label>
-                  <input
-                    {...register("FechaFinalAlistamiento")}
-                    type="date"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
                 {/* Observaciones */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -566,6 +562,28 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
                       </select>
                     </div>
                   ))}
+                </div>
+
+                {/* Aviso y Campo de Fecha Final Alistamiento */}
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                  {/* Aviso en rojo */}
+                  <div className="p-4 bg-red-50 border-2 border-red-300 rounded-lg">
+                    <p className="text-sm font-semibold text-red-700">
+                      ⚠️ Asignar fecha final de alistamiento al quedar todo 100%
+                    </p>
+                  </div>
+                  
+                  {/* Campo Fecha Final Alistamiento */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Fecha Final Alistamiento
+                    </label>
+                    <input
+                      {...register("FechaFinalAlistamiento")}
+                      type="date"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
                 </div>
 
                 <div className="mt-6 p-4 bg-gray-50 rounded-lg">

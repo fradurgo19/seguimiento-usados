@@ -27,7 +27,7 @@ export const mockColumns = [
   {
     id: "6",
     name: "TipoVehiculo",
-    displayName: "Tipo de Vehículo",
+    displayName: "Tipo de Equipo",
     type: "choice",
     hidden: false,
   },
@@ -231,7 +231,7 @@ export const mockItems: SharePointListItem[] = [
       Kilometraje: 72000,
       PrecioVenta: 68000000,
       Responsable: "María González",
-      Observaciones: "Trabajo completado. Vehículo entregado al cliente",
+      Observaciones: "Trabajo completado. Equipo entregado al cliente",
       Prioridad: "Alta",
       PorcentajeAvance: 100,
     },

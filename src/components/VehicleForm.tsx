@@ -1,5 +1,5 @@
 /**
- * Formulario para agregar/editar vehículos
+ * Formulario para agregar/editar equipos
  */
 
 import React, { useState } from "react";
@@ -85,7 +85,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900">
-            {isEditing ? "Editar Vehículo" : "Agregar Nuevo Vehículo"}
+            {isEditing ? "Editar Equipo" : "Agregar Nuevo Equipo"}
           </h2>
           <button
             onClick={onCancel}
@@ -176,10 +176,10 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
               )}
             </div>
 
-            {/* Tipo de Vehículo */}
+            {/* Tipo de Equipo */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tipo de Vehículo <span className="text-red-500">*</span>
+                Tipo de Equipo <span className="text-red-500">*</span>
               </label>
               <select
                 {...register("TipoVehiculo", {
@@ -363,7 +363,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
                 {...register("Observaciones")}
                 rows={4}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                placeholder="Observaciones adicionales sobre el vehículo..."
+                placeholder="Observaciones adicionales sobre el equipo..."
               />
             </div>
           </div>

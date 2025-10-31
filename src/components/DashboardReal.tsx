@@ -151,13 +151,13 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
   ];
 
   // Datos por Asesor
-  const vehiculosPorAsesor = items.reduce((acc: any, item) => {
+  const equiposPorAsesor = items.reduce((acc: any, item) => {
     const asesor = getFieldValue(item.fields, "Asesor") || "Sin asignar";
     acc[asesor] = (acc[asesor] || 0) + 1;
     return acc;
   }, {});
 
-  const asesoresData = Object.entries(vehiculosPorAsesor).map(
+  const asesoresData = Object.entries(equiposPorAsesor).map(
     ([name, value]) => ({
       name,
       cantidad: value,
@@ -165,53 +165,31 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
   );
 
   // Datos por Sede
-  const vehiculosPorSede = items.reduce((acc: any, item) => {
+  const equiposPorSede = items.reduce((acc: any, item) => {
     const sede = getFieldValue(item.fields, "Sede") || "Sin sede";
     acc[sede] = (acc[sede] || 0) + 1;
     return acc;
   }, {});
 
-  const sedesData = Object.entries(vehiculosPorSede).map(([name, value]) => ({
+  const sedesData = Object.entries(equiposPorSede).map(([name, value]) => ({
     name,
     value,
   }));
 
   // Datos por Modelo
-  const vehiculosPorModelo = items.reduce((acc: any, item) => {
+  const equiposPorModelo = items.reduce((acc: any, item) => {
     const modelo = getFieldValue(item.fields, "Modelo") || "Sin modelo";
     acc[modelo] = (acc[modelo] || 0) + 1;
     return acc;
   }, {});
 
-  const modelosData = Object.entries(vehiculosPorModelo)
+  const modelosData = Object.entries(equiposPorModelo)
     .map(([name, value]) => ({
       name,
       value,
     }))
     .slice(0, 5); // Top 5 modelos
 
-  // Vehículos por Prioridad
-  const prioridadData = items.reduce((acc: any, item) => {
-    const prioridad = Number(getFieldValue(item.fields, "Prioridad")) || 0;
-    const key = `Prioridad ${prioridad}`;
-    acc[key] = (acc[key] || 0) + 1;
-    return acc;
-  }, {});
-
-  const prioridadChartData = Object.entries(prioridadData)
-    .map(([name, value]) => ({
-      name,
-      value,
-      color:
-        name === "Prioridad 1"
-          ? "#ef4444"
-          : name === "Prioridad 2"
-          ? "#f59e0b"
-          : "#10b981",
-    }))
-    .sort(
-      (a, b) => Number(a.name.split(" ")[1]) - Number(b.name.split(" ")[1])
-    );
 
   return (
     <div className="space-y-6">
@@ -221,7 +199,7 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">
-                Total Vehículos
+                Total Equipos
               </p>
               <p className="text-3xl font-bold text-gray-900 mt-2">
                 {stats.total}
@@ -341,7 +319,7 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
         {/* Gráfico de Asesores */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Vehículos por Asesor
+            Equipos por Asesor
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={asesoresData}>
@@ -366,22 +344,6 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
               <YAxis />
               <Tooltip />
               <Bar dataKey="value" fill="#10b981" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Gráfico de Prioridad */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Distribución por Prioridad
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={prioridadChartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="value" fill="#f59e0b" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -419,32 +381,151 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
           </ResponsiveContainer>
         </div>
 
-        {/* Tabla de progreso por vehículo */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Progreso por Vehículo
-          </h3>
-          <div className="space-y-3 max-h-[300px] overflow-y-auto">
-            {sortedItems.slice(0, 10).map((item) => (
-              <div key={item.id}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-medium text-gray-900">
-                    {getFieldValue(item.fields, "Title") || "-"}
-                  </span>
-                  <span className="text-gray-600">
-                    {getPorcentajeAvance(item.fields)}%
-                  </span>
+        {/* Tabla de progreso por equipo y Últimos Registros - Dos columnas */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 col-span-1 lg:col-span-2">
+          {/* Tabla de progreso por equipo */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Progreso por Equipo
+            </h3>
+            <div className="space-y-3 max-h-[600px] overflow-y-auto">
+              {sortedItems.slice(0, 20).map((item) => (
+                <div key={item.id}>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-medium text-gray-900">
+                      {getFieldValue(item.fields, "Title") || "-"}
+                    </span>
+                    <span className="text-gray-600">
+                      {getPorcentajeAvance(item.fields)}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full transition-all"
+                      style={{
+                        width: `${getPorcentajeAvance(item.fields)}%`,
+                      }}
+                    />
+                  </div>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-blue-600 h-2 rounded-full transition-all"
-                    style={{
-                      width: `${getPorcentajeAvance(item.fields)}%`,
-                    }}
-                  />
+              ))}
+            </div>
+          </div>
+
+          {/* Últimos Registros Creados y Editados */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Últimos Registros Creados y Editados
+            </h3>
+            <div className="space-y-3">
+              {/* Últimos Creados */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-blue-600" />
+                  Recientemente Creados
+                </h4>
+                <div className="space-y-2 max-h-[120px] overflow-y-auto">
+                  {items
+                    .filter((item) => item.createdDateTime)
+                    .sort((a, b) => {
+                      const dateA = new Date(a.createdDateTime || 0).getTime();
+                      const dateB = new Date(b.createdDateTime || 0).getTime();
+                      return dateB - dateA; // Más reciente primero
+                    })
+                    .slice(0, 5)
+                    .map((item) => {
+                      const createdDate = item.createdDateTime 
+                        ? new Date(item.createdDateTime).toLocaleDateString("es-CO", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "-";
+                      return (
+                        <div
+                          key={`created-${item.id}`}
+                          className="p-2 bg-blue-50 rounded border border-blue-200"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {getFieldValue(item.fields, "Title") || getFieldValue(item.fields, "Serie") || "Sin título"}
+                              </p>
+                              <p className="text-xs text-gray-600">
+                                {getFieldValue(item.fields, "Modelo")} - {getFieldValue(item.fields, "Asesor")}
+                              </p>
+                            </div>
+                            <p className="text-xs text-gray-500 ml-2 whitespace-nowrap">
+                              {createdDate}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  {items.filter((item) => item.createdDateTime).length === 0 && (
+                    <p className="text-center text-gray-500 py-2 text-sm">
+                      No hay registros creados
+                    </p>
+                  )}
                 </div>
               </div>
-            ))}
+
+              {/* Últimos Editados */}
+              <div className="border-t border-gray-200 pt-3">
+                <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-green-600" />
+                  Recientemente Editados
+                </h4>
+                <div className="space-y-2 max-h-[120px] overflow-y-auto">
+                  {items
+                    .filter((item) => item.lastModifiedDateTime)
+                    .sort((a, b) => {
+                      const dateA = new Date(a.lastModifiedDateTime || 0).getTime();
+                      const dateB = new Date(b.lastModifiedDateTime || 0).getTime();
+                      return dateB - dateA; // Más reciente primero
+                    })
+                    .slice(0, 5)
+                    .map((item) => {
+                      const modifiedDate = item.lastModifiedDateTime 
+                        ? new Date(item.lastModifiedDateTime).toLocaleDateString("es-CO", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "-";
+                      return (
+                        <div
+                          key={`modified-${item.id}`}
+                          className="p-2 bg-green-50 rounded border border-green-200"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {getFieldValue(item.fields, "Title") || getFieldValue(item.fields, "Serie") || "Sin título"}
+                              </p>
+                              <p className="text-xs text-gray-600">
+                                {getFieldValue(item.fields, "Modelo")} - {getFieldValue(item.fields, "Asesor")}
+                              </p>
+                            </div>
+                            <p className="text-xs text-gray-500 ml-2 whitespace-nowrap">
+                              {modifiedDate}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  {items.filter((item) => item.lastModifiedDateTime).length === 0 && (
+                    <p className="text-center text-gray-500 py-2 text-sm">
+                      No hay registros editados
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -465,12 +546,12 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                 key={`F${num}`}
                 className="bg-gray-50 rounded-lg p-3 text-center"
               >
-                <p className="text-xs font-medium text-gray-600 mb-1">F{num}</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {completadas}
-                </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs font-medium text-gray-600">F{num}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
                   {porcentaje.toFixed(0)}%
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {completadas}
                 </p>
               </div>
             );
@@ -478,41 +559,41 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
         </div>
       </div>
 
-      {/* Urgentes (Próximos a Vencer) */}
+      {/* Urgentes (Próximos a Vencer) - Ancho completo */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Vehículos Próximos a Vencer (Días Restantes)
+          Equipos Próximos a Vencer (Días Restantes)
         </h3>
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {items
             .filter((item) => {
               const diasRestantes = Number(getFieldValue(item.fields, "DiasRestantes")) || 0;
               const avance = getPorcentajeAvance(item.fields);
-              // Mostrar solo los que tienen días restantes Y que no están al 100%
-              return diasRestantes > 0 && avance < 100;
+              // Mostrar los que tienen días restantes >= 0 (incluye 0) Y que no están al 100%
+              return diasRestantes >= 0 && avance < 100;
             })
             .sort(
               (a, b) =>
                 (Number(getFieldValue(a.fields, "DiasRestantes")) || 0) - (Number(getFieldValue(b.fields, "DiasRestantes")) || 0)
             )
-            .slice(0, 5)
+            .slice(0, 15)
             .map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200"
+                className="flex flex-col p-3 bg-red-50 rounded-lg border border-red-200"
               >
-                <div className="flex items-center gap-3">
-                  <AlertCircle className="w-5 h-5 text-red-600" />
-                  <div>
-                    <p className="font-medium text-gray-900">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-900 truncate text-sm">
                       {getFieldValue(item.fields, "Title")} - {getFieldValue(item.fields, "Modelo")}
                     </p>
-                    <p className="text-sm text-gray-600">
-                      Asesor: {getFieldValue(item.fields, "Asesor")}
+                    <p className="text-xs text-gray-600 truncate">
+                      {getFieldValue(item.fields, "Asesor")}
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-center mt-auto">
                   <p className="text-2xl font-bold text-red-600">
                     {Number(getFieldValue(item.fields, "DiasRestantes")) || 0}
                   </p>
@@ -523,11 +604,13 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
           {items.filter((item) => {
               const diasRestantes = Number(getFieldValue(item.fields, "DiasRestantes")) || 0;
               const avance = getPorcentajeAvance(item.fields);
-              return diasRestantes > 0 && avance < 100;
+              return diasRestantes >= 0 && avance < 100;
             }).length === 0 && (
-            <p className="text-center text-gray-500 py-4">
-              No hay vehículos próximos a vencer
-            </p>
+            <div className="col-span-full">
+              <p className="text-center text-gray-500 py-4">
+                No hay equipos próximos a vencer
+              </p>
+            </div>
           )}
         </div>
       </div>
@@ -536,10 +619,10 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="p-6 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">
-            Tabla Detallada - Progreso de Fases por Vehículo
+            Tabla Detallada - Progreso de Fases por Equipo
           </h3>
           <p className="text-sm text-gray-600 mt-1">
-            Vista completa del estado de cada fase (F1-F16) por vehículo. Las fases incompletas aparecen primero.
+            Vista completa del estado de cada fase (F1-F16) por equipo. Las fases incompletas aparecen primero.
           </p>
         </div>
         
@@ -558,26 +641,26 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
           <table className="divide-y divide-gray-200" style={{ minWidth: 'max-content', width: '100%' }}>
             <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase sticky left-0 bg-gray-50 z-20">
+                <th className="px-4 py-3 sticky left-0 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase z-20">
                   Prioridad
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-4 py-3 sticky left-[100px] bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase z-20">
                   Serie
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-4 py-3 sticky left-[220px] bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase z-20">
                   OTT
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-4 py-3 sticky left-[340px] bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase z-20">
                   Modelo
+                </th>
+                <th className="px-4 py-3 sticky left-[460px] bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase z-20">
+                  Asesor
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Fecha Compromiso
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Cliente
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Asesor
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   % Avance
@@ -629,13 +712,8 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                   }
                 };
 
-                const getPrioridadBadge = (prioridad: number) => {
-                  if (prioridad === 1)
-                    return "bg-red-100 text-red-800 border-red-300";
-                  if (prioridad === 2)
-                    return "bg-yellow-100 text-yellow-800 border-yellow-300";
-                  return "bg-green-100 text-green-800 border-green-300";
-                };
+                // Prioridad es solo un número, sin colores especiales
+                const prioridadValue = Number(getFieldValue(item.fields, "Prioridad")) || 0;
 
                 const getFaseColor = (porcentaje: string) => {
                   if (porcentaje === "100%") return "bg-green-500 text-white";
@@ -645,32 +723,28 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
 
                 return (
                   <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 sticky left-0 bg-white">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-bold rounded border ${getPrioridadBadge(
-                          Number(getFieldValue(item.fields, "Prioridad"))
-                        )}`}
-                      >
-                        {Number(getFieldValue(item.fields, "Prioridad"))}
+                    <td className="px-4 py-3 sticky left-0 bg-white z-10">
+                      <span className="inline-flex px-2 py-1 text-xs font-medium text-gray-900">
+                        {prioridadValue}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                    <td className="px-4 py-3 sticky left-[100px] bg-white text-sm text-gray-900 whitespace-nowrap z-10">
                       {getFieldValue(item.fields, "Serie")}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                    <td className="px-4 py-3 sticky left-[220px] bg-white text-sm text-gray-900 whitespace-nowrap z-10">
                       {getFieldValue(item.fields, "OTT")}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                    <td className="px-4 py-3 sticky left-[340px] bg-white text-sm text-gray-900 whitespace-nowrap z-10">
                       {getFieldValue(item.fields, "Modelo")}
+                    </td>
+                    <td className="px-4 py-3 sticky left-[460px] bg-white text-sm text-gray-900 whitespace-nowrap z-10">
+                      {getFieldValue(item.fields, "Asesor")}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
                       {formatDate(getFieldValue(item.fields, "FechaCompromisoComercial"))}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
                       {getFieldValue(item.fields, "Title")}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {getFieldValue(item.fields, "Asesor")}
                     </td>
                     <td className="px-4 py-3 text-sm font-bold text-gray-900 whitespace-nowrap">
                       {getPorcentajeAvance(item.fields)}%

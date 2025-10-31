@@ -191,7 +191,7 @@ const SharePointDataTableSimple: React.FC<SharePointDataTableSimpleProps> = ({
 
       {items.length === 0 && (
         <div className="text-center py-12 bg-white rounded-lg">
-          <p className="text-gray-500">No hay vehículos registrados</p>
+          <p className="text-gray-500">No hay equipos registrados</p>
         </div>
       )}
     </div>
