@@ -3,7 +3,7 @@
  * Basado en la estructura real de SharePoint
  */
 
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -18,23 +18,114 @@ import {
 } from "recharts";
 import { TrendingUp, Clock, CheckCircle, AlertCircle, Car } from "lucide-react";
 import { SharePointListItem } from "../services/sharePointService";
+import { getFieldValue, calcularPorcentajeAvance } from "../utils/sharePointFieldMapping";
 
 interface DashboardRealProps {
   items: SharePointListItem[];
 }
 
+// Componente para la barra de scroll superior sincronizada
+const TopScrollBar: React.FC = () => {
+  const topScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const topScroll = topScrollRef.current;
+    const tableContainer = document.getElementById('table-scroll-container') as HTMLDivElement;
+    
+    if (!topScroll || !tableContainer) return;
+
+    // Calcular el ancho de la tabla para el scroll superior
+    const updateScrollWidth = () => {
+      const table = tableContainer.querySelector('table');
+      if (table) {
+        const scrollDiv = topScroll.querySelector('div') as HTMLElement;
+        if (scrollDiv) {
+          scrollDiv.style.minWidth = `${table.scrollWidth}px`;
+        }
+      }
+    };
+
+    // Sincronizar scroll del superior con el de la tabla
+    const handleTopScroll = () => {
+      tableContainer.scrollLeft = topScroll.scrollLeft;
+    };
+
+    // Sincronizar scroll de la tabla con el superior
+    const handleTableScroll = () => {
+      topScroll.scrollLeft = tableContainer.scrollLeft;
+    };
+
+    topScroll.addEventListener('scroll', handleTopScroll);
+    tableContainer.addEventListener('scroll', handleTableScroll);
+    
+    // Actualizar el ancho cuando cambie el tamaño de la tabla
+    const resizeObserver = new ResizeObserver(() => {
+      updateScrollWidth();
+    });
+    
+    const table = tableContainer.querySelector('table');
+    if (table) {
+      resizeObserver.observe(table);
+    }
+    
+    updateScrollWidth();
+
+    return () => {
+      topScroll.removeEventListener('scroll', handleTopScroll);
+      tableContainer.removeEventListener('scroll', handleTableScroll);
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  return (
+    <div 
+      ref={topScrollRef}
+      className="overflow-x-auto overflow-y-hidden border-b border-gray-200 bg-gray-50" 
+      style={{ 
+        height: '20px',
+        scrollbarWidth: 'thin',
+        scrollbarColor: '#cbd5e0 #f7fafc'
+      }}
+    >
+      <div style={{ height: '1px' }}></div>
+    </div>
+  );
+};
+
 const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
-  // Calcular estadísticas
+  // Función helper para obtener porcentaje de avance desde SharePoint
+  const getPorcentajeAvance = (fields: Record<string, any>) => {
+    let porcentaje = getFieldValue(fields, "PorcentajeAvanceTotal");
+    
+    // Si es un string (ej: "97%"), extraer el número
+    if (typeof porcentaje === 'string') {
+      porcentaje = parseFloat(porcentaje.replace('%', '').replace(/[^0-9.]/g, '')) || 0;
+    } else {
+      porcentaje = Number(porcentaje) || 0;
+    }
+    
+    return porcentaje;
+  };
+
+  // Ordenar items por % Avance (menor a mayor)
+  const sortedItems = [...items].sort((a, b) => {
+    const avanceA = getPorcentajeAvance(a.fields);
+    const avanceB = getPorcentajeAvance(b.fields);
+    return avanceA - avanceB;
+  });
+
+  // Calcular estadísticas (usar items originales para estadísticas)
   const completados = items.filter(
-    (i) => (i.fields.PorcentajeAvanceTotal || 0) === 100
+    (i) => getPorcentajeAvance(i.fields) === 100
   ).length;
   const enProceso = items.filter(
-    (i) =>
-      (i.fields.PorcentajeAvanceTotal || 0) > 0 &&
-      (i.fields.PorcentajeAvanceTotal || 0) < 100
+    (i) => {
+      const avance = getPorcentajeAvance(i.fields);
+      return avance > 0 && avance < 100;
+    }
   ).length;
   const pendientes = items.filter(
-    (i) => (i.fields.PorcentajeAvanceTotal || 0) === 0
+    (i) => getPorcentajeAvance(i.fields) === 0
   ).length;
 
   const stats = {
@@ -44,11 +135,11 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
     pendientes,
     promedioAvance:
       items.reduce(
-        (sum, i) => sum + (Number(i.fields.PorcentajeAvanceTotal) || 0),
+        (sum, i) => sum + getPorcentajeAvance(i.fields),
         0
       ) / items.length || 0,
     diasPromedioRestantes:
-      items.reduce((sum, i) => sum + (Number(i.fields.DiasRestantes) || 0), 0) /
+      items.reduce((sum, i) => sum + (Number(getFieldValue(i.fields, "DiasRestantes")) || 0), 0) /
         items.length || 0,
   };
 
@@ -61,7 +152,7 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
 
   // Datos por Asesor
   const vehiculosPorAsesor = items.reduce((acc: any, item) => {
-    const asesor = item.fields.Asesor || "Sin asignar";
+    const asesor = getFieldValue(item.fields, "Asesor") || "Sin asignar";
     acc[asesor] = (acc[asesor] || 0) + 1;
     return acc;
   }, {});
@@ -75,7 +166,7 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
 
   // Datos por Sede
   const vehiculosPorSede = items.reduce((acc: any, item) => {
-    const sede = item.fields.Sede || "Sin sede";
+    const sede = getFieldValue(item.fields, "Sede") || "Sin sede";
     acc[sede] = (acc[sede] || 0) + 1;
     return acc;
   }, {});
@@ -87,7 +178,7 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
 
   // Datos por Modelo
   const vehiculosPorModelo = items.reduce((acc: any, item) => {
-    const modelo = item.fields.Modelo || "Sin modelo";
+    const modelo = getFieldValue(item.fields, "Modelo") || "Sin modelo";
     acc[modelo] = (acc[modelo] || 0) + 1;
     return acc;
   }, {});
@@ -101,7 +192,7 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
 
   // Vehículos por Prioridad
   const prioridadData = items.reduce((acc: any, item) => {
-    const prioridad = item.fields.Prioridad || 0;
+    const prioridad = Number(getFieldValue(item.fields, "Prioridad")) || 0;
     const key = `Prioridad ${prioridad}`;
     acc[key] = (acc[key] || 0) + 1;
     return acc;
@@ -334,21 +425,21 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
             Progreso por Vehículo
           </h3>
           <div className="space-y-3 max-h-[300px] overflow-y-auto">
-            {items.slice(0, 10).map((item) => (
+            {sortedItems.slice(0, 10).map((item) => (
               <div key={item.id}>
                 <div className="flex justify-between text-sm mb-1">
                   <span className="font-medium text-gray-900">
-                    {item.fields.Title}
+                    {getFieldValue(item.fields, "Title") || "-"}
                   </span>
                   <span className="text-gray-600">
-                    {item.fields.PorcentajeAvanceTotal || 0}%
+                    {getPorcentajeAvance(item.fields)}%
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
                     className="bg-blue-600 h-2 rounded-full transition-all"
                     style={{
-                      width: `${item.fields.PorcentajeAvanceTotal || 0}%`,
+                      width: `${getPorcentajeAvance(item.fields)}%`,
                     }}
                   />
                 </div>
@@ -366,7 +457,7 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
           {Array.from({ length: 16 }, (_, i) => i + 1).map((num) => {
             const completadas = items.filter(
-              (item) => item.fields[`F${num}`] === "100%"
+              (item) => getFieldValue(item.fields, `F${num}`) === "100%"
             ).length;
             const porcentaje = (completadas / items.length) * 100;
             return (
@@ -394,10 +485,15 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
         </h3>
         <div className="space-y-2">
           {items
-            .filter((item) => (item.fields.DiasRestantes || 0) < 10)
+            .filter((item) => {
+              const diasRestantes = Number(getFieldValue(item.fields, "DiasRestantes")) || 0;
+              const avance = getPorcentajeAvance(item.fields);
+              // Mostrar solo los que tienen días restantes Y que no están al 100%
+              return diasRestantes > 0 && avance < 100;
+            })
             .sort(
               (a, b) =>
-                (a.fields.DiasRestantes || 0) - (b.fields.DiasRestantes || 0)
+                (Number(getFieldValue(a.fields, "DiasRestantes")) || 0) - (Number(getFieldValue(b.fields, "DiasRestantes")) || 0)
             )
             .slice(0, 5)
             .map((item) => (
@@ -409,23 +505,26 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                   <AlertCircle className="w-5 h-5 text-red-600" />
                   <div>
                     <p className="font-medium text-gray-900">
-                      {item.fields.Title} - {item.fields.Modelo}
+                      {getFieldValue(item.fields, "Title")} - {getFieldValue(item.fields, "Modelo")}
                     </p>
                     <p className="text-sm text-gray-600">
-                      Asesor: {item.fields.Asesor}
+                      Asesor: {getFieldValue(item.fields, "Asesor")}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold text-red-600">
-                    {item.fields.DiasRestantes || 0}
+                    {Number(getFieldValue(item.fields, "DiasRestantes")) || 0}
                   </p>
                   <p className="text-xs text-gray-600">días restantes</p>
                 </div>
               </div>
             ))}
-          {items.filter((item) => (item.fields.DiasRestantes || 0) < 10)
-            .length === 0 && (
+          {items.filter((item) => {
+              const diasRestantes = Number(getFieldValue(item.fields, "DiasRestantes")) || 0;
+              const avance = getPorcentajeAvance(item.fields);
+              return diasRestantes > 0 && avance < 100;
+            }).length === 0 && (
             <p className="text-center text-gray-500 py-4">
               No hay vehículos próximos a vencer
             </p>
@@ -440,14 +539,26 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
             Tabla Detallada - Progreso de Fases por Vehículo
           </h3>
           <p className="text-sm text-gray-600 mt-1">
-            Vista completa del estado de cada fase (F1-F16) por vehículo
+            Vista completa del estado de cada fase (F1-F16) por vehículo. Las fases incompletas aparecen primero.
           </p>
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        
+        {/* Scroll horizontal superior sincronizado */}
+        <TopScrollBar />
+        
+        <div 
+          id="table-scroll-container"
+          className="overflow-x-auto overflow-y-auto" 
+          style={{ 
+            maxHeight: '600px',
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#cbd5e0 #f7fafc'
+          }}
+        >
+          <table className="divide-y divide-gray-200" style={{ minWidth: 'max-content', width: '100%' }}>
+            <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase sticky left-0 bg-gray-50">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase sticky left-0 bg-gray-50 z-20">
                   Prioridad
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -471,18 +582,40 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   % Avance
                 </th>
-                {Array.from({ length: 16 }, (_, i) => i + 1).map((num) => (
-                  <th
-                    key={`F${num}`}
-                    className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase"
-                  >
-                    F{num}
-                  </th>
-                ))}
+                {(() => {
+                  // Calcular qué fases están incompletas (al menos un registro no está al 100%)
+                  const fasesIncompletas: number[] = [];
+                  const fasesCompletas: number[] = [];
+                  
+                  for (let i = 1; i <= 16; i++) {
+                    const tieneIncompletas = items.some((item) => {
+                      const faseValue = getFieldValue(item.fields, `F${i}`) || "0%";
+                      return faseValue !== "100%";
+                    });
+                    
+                    if (tieneIncompletas) {
+                      fasesIncompletas.push(i);
+                    } else {
+                      fasesCompletas.push(i);
+                    }
+                  }
+                  
+                  // Primero las incompletas, luego las completas
+                  const fasesOrdenadas = [...fasesIncompletas, ...fasesCompletas];
+                  
+                  return fasesOrdenadas.map((num) => (
+                    <th
+                      key={`F${num}`}
+                      className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase"
+                    >
+                      F{num}
+                    </th>
+                  ));
+                })()}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {items.map((item) => {
+              {sortedItems.map((item) => {
                 const formatDate = (dateString: string) => {
                   try {
                     const date = new Date(dateString);
@@ -515,50 +648,71 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                     <td className="px-4 py-3 sticky left-0 bg-white">
                       <span
                         className={`inline-flex px-2 py-1 text-xs font-bold rounded border ${getPrioridadBadge(
-                          item.fields.Prioridad
+                          Number(getFieldValue(item.fields, "Prioridad"))
                         )}`}
                       >
-                        {item.fields.Prioridad}
+                        {Number(getFieldValue(item.fields, "Prioridad"))}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {item.fields.Serie}
+                      {getFieldValue(item.fields, "Serie")}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {item.fields.OTT}
+                      {getFieldValue(item.fields, "OTT")}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {item.fields.Modelo}
+                      {getFieldValue(item.fields, "Modelo")}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {formatDate(item.fields.FechaCompromisoComercial)}
+                      {formatDate(getFieldValue(item.fields, "FechaCompromisoComercial"))}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {item.fields.Title}
+                      {getFieldValue(item.fields, "Title")}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {item.fields.Asesor}
+                      {getFieldValue(item.fields, "Asesor")}
                     </td>
                     <td className="px-4 py-3 text-sm font-bold text-gray-900 whitespace-nowrap">
-                      {item.fields.PorcentajeAvanceTotal || 0}%
+                      {getPorcentajeAvance(item.fields)}%
                     </td>
-                    {Array.from({ length: 16 }, (_, i) => i + 1).map((num) => {
-                      const porcentaje = item.fields[`F${num}`] || "0%";
-                      return (
-                        <td
-                          key={`${item.id}-F${num}`}
-                          className="px-3 py-3 text-center"
-                        >
-                          <span
-                            className={`inline-flex px-2 py-1 text-xs font-bold rounded ${getFaseColor(
-                              porcentaje
-                            )}`}
+                    {(() => {
+                      // Usar el mismo orden de fases que en el header
+                      const fasesIncompletas: number[] = [];
+                      const fasesCompletas: number[] = [];
+                      
+                      for (let i = 1; i <= 16; i++) {
+                        const tieneIncompletas = items.some((item) => {
+                          const faseValue = getFieldValue(item.fields, `F${i}`) || "0%";
+                          return faseValue !== "100%";
+                        });
+                        
+                        if (tieneIncompletas) {
+                          fasesIncompletas.push(i);
+                        } else {
+                          fasesCompletas.push(i);
+                        }
+                      }
+                      
+                      const fasesOrdenadas = [...fasesIncompletas, ...fasesCompletas];
+                      
+                      return fasesOrdenadas.map((num) => {
+                        const porcentaje = getFieldValue(item.fields, `F${num}`) || "0%";
+                        return (
+                          <td
+                            key={`${item.id}-F${num}`}
+                            className="px-3 py-3 text-center"
                           >
-                            {porcentaje}
-                          </span>
-                        </td>
-                      );
-                    })}
+                            <span
+                              className={`inline-flex px-2 py-1 text-xs font-bold rounded ${getFaseColor(
+                                porcentaje
+                              )}`}
+                            >
+                              {porcentaje}
+                            </span>
+                          </td>
+                        );
+                      });
+                    })()}
                   </tr>
                 );
               })}

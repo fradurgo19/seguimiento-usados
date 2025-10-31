@@ -8,6 +8,7 @@ import { SharePointListItem } from "../services/sharePointService";
 import { Edit2, Trash2, TestTube2, ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { getFieldValue, calcularPorcentajeAvance } from "../utils/sharePointFieldMapping";
 
 interface SharePointTableRealProps {
   items: SharePointListItem[];
@@ -24,6 +25,27 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
   onDelete,
 }) => {
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+
+  // Función helper para obtener porcentaje de avance
+  const getPorcentajeAvance = (fields: Record<string, any>) => {
+    let porcentaje = getFieldValue(fields, "PorcentajeAvanceTotal");
+    
+    // Si es un string (ej: "97%"), extraer el número
+    if (typeof porcentaje === 'string') {
+      porcentaje = parseFloat(porcentaje.replace('%', '').replace(/[^0-9.]/g, '')) || 0;
+    } else {
+      porcentaje = Number(porcentaje) || 0;
+    }
+    
+    return porcentaje;
+  };
+
+  // Ordenar items por % Avance (menor a mayor)
+  const sortedItems = [...items].sort((a, b) => {
+    const avanceA = getPorcentajeAvance(a.fields);
+    const avanceB = getPorcentajeAvance(b.fields);
+    return avanceA - avanceB;
+  });
 
   const formatDate = (dateString: string): string => {
     try {
@@ -101,62 +123,76 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {items.map((item) => (
+              {sortedItems.map((item) => (
                 <React.Fragment key={item.id}>
                   <tr className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      {item.fields.Title}
+                      {getFieldValue(item.fields, "Title") || "-"}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
-                      {item.fields.Serie}
+                      {getFieldValue(item.fields, "Serie") || "-"}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
-                      {item.fields.Modelo}
+                      {getFieldValue(item.fields, "Modelo") || "-"}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
-                      {item.fields.Asesor}
+                      {getFieldValue(item.fields, "Asesor") || "-"}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
-                      {item.fields.Sede}
+                      {getFieldValue(item.fields, "Sede") || "-"}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <span
                         className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPrioridadColor(
-                          item.fields.Prioridad
+                          Number(getFieldValue(item.fields, "Prioridad")) || 0
                         )}`}
                       >
-                        {getPrioridadText(item.fields.Prioridad)} (
-                        {item.fields.Prioridad})
+                        {getPrioridadText(Number(getFieldValue(item.fields, "Prioridad")) || 0)} (
+                        {getFieldValue(item.fields, "Prioridad") || 0})
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <div className="flex items-center gap-2">
-                        <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-blue-600 h-2 rounded-full"
-                            style={{
-                              width: `${
-                                item.fields.PorcentajeAvanceTotal || 0
-                              }%`,
-                            }}
-                          />
-                        </div>
-                        <span className="text-xs text-gray-600 w-10 text-right">
-                          {item.fields.PorcentajeAvanceTotal || 0}%
-                        </span>
+                        {(() => {
+                          // Usar el valor calculado de SharePoint directamente
+                          let porcentaje = getFieldValue(item.fields, "PorcentajeAvanceTotal");
+                          
+                          // Si es un string (ej: "97%"), extraer el número
+                          if (typeof porcentaje === 'string') {
+                            porcentaje = parseFloat(porcentaje.replace('%', '').replace(/[^0-9.]/g, '')) || 0;
+                          } else {
+                            porcentaje = Number(porcentaje) || 0;
+                          }
+                          
+                          return (
+                            <>
+                              <div className="w-24 bg-gray-200 rounded-full h-2">
+                                <div
+                                  className="bg-blue-600 h-2 rounded-full"
+                                  style={{
+                                    width: `${porcentaje}%`,
+                                  }}
+                                />
+                              </div>
+                              <span className="text-xs text-gray-600 w-10 text-right">
+                                {porcentaje}%
+                              </span>
+                            </>
+                          );
+                        })()}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <span
                         className={`font-medium ${
-                          (item.fields.DiasRestantes || 0) < 5
+                          (Number(getFieldValue(item.fields, "DiasRestantes")) || 0) < 5
                             ? "text-red-600"
-                            : (item.fields.DiasRestantes || 0) < 10
+                            : (Number(getFieldValue(item.fields, "DiasRestantes")) || 0) < 10
                             ? "text-yellow-600"
                             : "text-green-600"
                         }`}
                       >
-                        {item.fields.DiasRestantes || 0} días
+                        {Number(getFieldValue(item.fields, "DiasRestantes")) || 0} días
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -203,7 +239,7 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
                                 OTT:
                               </span>
                               <p className="text-sm font-medium text-gray-900">
-                                {item.fields.OTT}
+                                {getFieldValue(item.fields, "OTT") || "-"}
                               </p>
                             </div>
                             <div>
@@ -211,7 +247,7 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
                                 Ciclo:
                               </span>
                               <p className="text-sm font-medium text-gray-900">
-                                {item.fields.Ciclo}
+                                {getFieldValue(item.fields, "Ciclo") || "-"}
                               </p>
                             </div>
                             <div>
@@ -219,7 +255,7 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
                                 Observaciones:
                               </span>
                               <p className="text-sm font-medium text-gray-900">
-                                {item.fields.Observaciones || "-"}
+                                {getFieldValue(item.fields, "Observaciones") || "-"}
                               </p>
                             </div>
                           </div>
@@ -234,7 +270,7 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
                                 Solicitud:
                               </span>
                               <p className="text-sm font-medium text-gray-900">
-                                {formatDate(item.fields.FechaSolicitud)}
+                                {formatDate(getFieldValue(item.fields, "FechaSolicitud") || "")}
                               </p>
                             </div>
                             <div>
@@ -243,7 +279,7 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
                               </span>
                               <p className="text-sm font-medium text-gray-900">
                                 {formatDate(
-                                  item.fields.FechaCompromisoComercial
+                                  getFieldValue(item.fields, "FechaCompromisoComercial") || ""
                                 )}
                               </p>
                             </div>
@@ -252,7 +288,7 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
                                 Inicio Ciclo:
                               </span>
                               <p className="text-sm font-medium text-gray-900">
-                                {formatDate(item.fields.FechaInicioCiclo)}
+                                {formatDate(getFieldValue(item.fields, "FechaInicioCiclo") || "")}
                               </p>
                             </div>
                             <div>
@@ -260,9 +296,9 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
                                 Final Alistamiento:
                               </span>
                               <p className="text-sm font-medium text-gray-900">
-                                {item.fields.FechaFinalAlistamiento
+                                {getFieldValue(item.fields, "FechaFinalAlistamiento")
                                   ? formatDate(
-                                      item.fields.FechaFinalAlistamiento
+                                      getFieldValue(item.fields, "FechaFinalAlistamiento") || ""
                                     )
                                   : "-"}
                               </p>
@@ -278,7 +314,7 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
                               {Array.from({ length: 16 }, (_, i) => i + 1).map(
                                 (num) => {
                                   const porcentaje =
-                                    item.fields[`F${num}`] || "0%";
+                                    getFieldValue(item.fields, `F${num}`) || "0%";
                                   const bgColor =
                                     porcentaje === "100%"
                                       ? "bg-green-500"
@@ -327,7 +363,7 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
         </div>
       </div>
 
-      {items.length === 0 && (
+      {sortedItems.length === 0 && (
         <div className="text-center py-12 bg-white rounded-lg">
           <p className="text-gray-500">No hay vehículos registrados</p>
         </div>

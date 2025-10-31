@@ -96,18 +96,51 @@ class SharePointService {
   }
 
   /**
-   * Obtiene todos los items de la lista de SharePoint
+   * Obtiene todos los items de la lista de SharePoint (con paginación)
    */
   async getListItems(): Promise<SharePointListItem[]> {
     try {
       const siteId = await this.getSiteId();
       const listId = await this.getListId(siteId);
 
-      const response = await this.axiosInstance.get<SharePointListResponse>(
-        `/sites/${siteId}/lists/${listId}/items?expand=fields`
-      );
+      let allItems: SharePointListItem[] = [];
+      let nextLink: string | undefined = undefined;
+      let pageCount = 0;
 
-      return response.data.value;
+      // Iterar hasta obtener todos los registros usando paginación
+      do {
+        pageCount++;
+        const url = nextLink 
+          ? nextLink // Si hay nextLink, usarlo (ya incluye la URL completa)
+          : `/sites/${siteId}/lists/${listId}/items?$expand=fields&$top=5000&$orderby=Id desc`;
+
+        const response = await this.axiosInstance.get<SharePointListResponse>(url);
+
+        if (response.data.value && response.data.value.length > 0) {
+          allItems = allItems.concat(response.data.value);
+          console.log(`📄 Página ${pageCount}: ${response.data.value.length} registros (Total acumulado: ${allItems.length})`);
+        }
+
+        // Verificar si hay más páginas
+        nextLink = response.data["@odata.nextLink"];
+      } while (nextLink);
+
+      console.log(`✅ Total de registros cargados desde SharePoint: ${allItems.length}`);
+
+      // Debug: Mostrar las claves de los campos del primer item para identificar nombres internos
+      if (allItems.length > 0) {
+        console.log("🔍 Claves de campos disponibles en SharePoint:");
+        console.log(Object.keys(allItems[0].fields));
+        console.log("📋 Primeros 5 registros (IDs y Títulos):", 
+          allItems.slice(0, 5).map(i => ({ 
+            id: i.id, 
+            title: i.fields.Title || i.fields.field_0 || 'Sin título',
+            serie: i.fields.field_0 || i.fields.Serie || 'Sin serie'
+          }))
+        );
+      }
+
+      return allItems;
     } catch (error) {
       console.error("Error obteniendo items de la lista:", error);
       throw error;

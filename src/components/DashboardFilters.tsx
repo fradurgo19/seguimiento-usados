@@ -30,12 +30,24 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
   filters,
   onFilterChange,
 }) => {
-  // Extraer opciones únicas de los datos
-  const sedes = [...new Set(items.map((i) => i.fields.Sede).filter(Boolean))].sort();
-  const asesores = [...new Set(items.map((i) => i.fields.Asesor).filter(Boolean))].sort();
+  // Extraer opciones únicas de los datos usando getFieldValue para mapeo correcto
+  const sedes = [...new Set(items.map((i) => {
+    const sede = i.fields.field_28 || i.fields.Sede;
+    return sede;
+  }).filter(Boolean))].sort();
+  const asesores = [...new Set(items.map((i) => {
+    const asesor = i.fields.field_4 || i.fields.Asesor;
+    return asesor;
+  }).filter(Boolean))].sort();
   const clientes = [...new Set(items.map((i) => i.fields.Title).filter(Boolean))].sort();
-  const observaciones = [...new Set(items.map((i) => i.fields.Observaciones).filter(Boolean))].sort();
-  const ciclos = [...new Set(items.map((i) => i.fields.Ciclo).filter(Boolean))].sort();
+  const observaciones = [...new Set(items.map((i) => {
+    const obs = i.fields.field_8 || i.fields.Observaciones;
+    return obs;
+  }).filter(Boolean))].sort();
+  const ciclos = [...new Set(items.map((i) => {
+    const ciclo = i.fields.field_29 || i.fields.Ciclo;
+    return ciclo;
+  }).filter(Boolean))].sort();
 
   const handleChange = (field: keyof FilterState, value: string) => {
     onFilterChange({
