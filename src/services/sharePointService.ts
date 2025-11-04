@@ -290,12 +290,15 @@ class SharePointService {
    */
   async getItemAttachments(itemId: string): Promise<any[]> {
     try {
-      const token = await authService.getAccessToken();
+      // Obtener token específico para SharePoint
+      const token = await authService.getSharePointToken();
       const siteUrl = sharePointConfig.siteUrl;
       const listName = sharePointConfig.listName;
       
       // Usar SharePoint REST API directamente para attachments
       const restUrl = `${siteUrl}/_api/web/lists/getbytitle('${listName}')/items(${itemId})/AttachmentFiles`;
+      
+      console.log(`📎 Obteniendo adjuntos para item ${itemId}...`);
       
       const response = await axios.get(restUrl, {
         headers: {
@@ -304,14 +307,15 @@ class SharePointService {
         },
       });
 
-      console.log(`📎 Adjuntos obtenidos para item ${itemId}:`, response.data.d?.results || []);
+      console.log(`✅ Adjuntos obtenidos: ${response.data.d?.results?.length || 0} archivo(s)`);
       return response.data.d?.results || [];
     } catch (error: any) {
       // Si el error es 404, significa que no hay adjuntos
       if (error.response?.status === 404) {
+        console.log(`ℹ️ No hay adjuntos para el item ${itemId}`);
         return [];
       }
-      console.error("Error obteniendo adjuntos:", error);
+      console.error("❌ Error obteniendo adjuntos:", error.message);
       return []; // Devolver array vacío en lugar de error
     }
   }
@@ -324,11 +328,12 @@ class SharePointService {
     file: File
   ): Promise<any> {
     try {
-      const token = await authService.getAccessToken();
+      // Obtener token específico para SharePoint
+      const token = await authService.getSharePointToken();
       const siteUrl = sharePointConfig.siteUrl;
       const listName = sharePointConfig.listName;
 
-      console.log(`📤 Intentando subir archivo: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
+      console.log(`📤 Subiendo archivo: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
       console.log(`📍 Item ID: ${itemId}`);
 
       // Leer el archivo como ArrayBuffer
@@ -336,46 +341,23 @@ class SharePointService {
 
       // Usar SharePoint REST API directamente para subir attachments
       const restUrl = `${siteUrl}/_api/web/lists/getbytitle('${listName}')/items(${itemId})/AttachmentFiles/add(FileName='${encodeURIComponent(file.name)}')`;
-      
-      console.log(`🔗 URL de upload: ${restUrl}`);
 
-      // Intentar primero sin Request Digest (funciona con Azure AD tokens)
-      try {
-        const response = await axios.post(restUrl, arrayBuffer, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json;odata=verbose',
-            'Content-Type': 'application/octet-stream',
-          },
-        });
-
-        console.log(`✅ Adjunto subido exitosamente (sin digest): ${file.name}`);
-        return response.data;
-      } catch (digestError: any) {
-        // Si falla, intentar con Request Digest
-        console.log(`⚠️ Primer intento falló, intentando con Request Digest...`);
-        
-        const digest = await this.getRequestDigest();
-        const response = await axios.post(restUrl, arrayBuffer, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json;odata=verbose',
-            'Content-Type': 'application/octet-stream',
-            'X-RequestDigest': digest,
-          },
-        });
-
-        console.log(`✅ Adjunto subido exitosamente (con digest): ${file.name}`);
-        return response.data;
-      }
-    } catch (error: any) {
-      console.error(`❌ Error subiendo adjunto ${file.name}:`, error);
-      console.error("Detalles completos del error:", {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        headers: error.response?.headers,
+      const response = await axios.post(restUrl, arrayBuffer, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json;odata=verbose',
+          'Content-Type': 'application/octet-stream',
+        },
       });
+
+      console.log(`✅ Adjunto subido exitosamente: ${file.name}`);
+      return response.data;
+    } catch (error: any) {
+      console.error(`❌ Error subiendo adjunto ${file.name}:`, error.message);
+      if (error.response) {
+        console.error("📋 Status:", error.response.status);
+        console.error("📋 Detalles:", error.response.data);
+      }
       throw error;
     }
   }
@@ -385,7 +367,7 @@ class SharePointService {
    */
   private async getRequestDigest(): Promise<string> {
     try {
-      const token = await authService.getAccessToken();
+      const token = await authService.getSharePointToken();
       const siteUrl = sharePointConfig.siteUrl;
 
       const response = await axios.post(
@@ -401,8 +383,7 @@ class SharePointService {
 
       return response.data.d.GetContextWebInformation.FormDigestValue;
     } catch (error) {
-      console.error("Error obteniendo Request Digest:", error);
-      // Si falla, intentar sin digest (algunas configuraciones lo permiten)
+      console.error("❌ Error obteniendo Request Digest:", error);
       return "";
     }
   }
@@ -415,7 +396,8 @@ class SharePointService {
     fileName: string
   ): Promise<void> {
     try {
-      const token = await authService.getAccessToken();
+      // Obtener token específico para SharePoint
+      const token = await authService.getSharePointToken();
       const siteUrl = sharePointConfig.siteUrl;
       const listName = sharePointConfig.listName;
 
@@ -431,7 +413,7 @@ class SharePointService {
 
       console.log(`✅ Adjunto eliminado exitosamente: ${fileName}`);
     } catch (error) {
-      console.error("Error eliminando adjunto:", error);
+      console.error("❌ Error eliminando adjunto:", error);
       throw error;
     }
   }

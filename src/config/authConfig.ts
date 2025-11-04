@@ -20,9 +20,16 @@ export const msalConfig: Configuration = {
   },
 };
 
-// Scopes necesarios para SharePoint y Microsoft Graph
+// Scopes necesarios para Microsoft Graph
 export const loginRequest: PopupRequest = {
   scopes: ["User.Read", "Sites.Read.All", "Sites.ReadWrite.All"],
+};
+
+// Scopes necesarios para SharePoint REST API (adjuntos)
+export const sharePointRequest: PopupRequest = {
+  scopes: [
+    `${(import.meta.env.VITE_SHAREPOINT_SITE_URL || "").replace(/\/$/, "")}/.default`
+  ],
 };
 
 // Configuración de SharePoint

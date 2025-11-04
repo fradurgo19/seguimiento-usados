@@ -9,7 +9,7 @@ import {
   AuthenticationResult,
   InteractionRequiredAuthError,
 } from "@azure/msal-browser";
-import { msalConfig, loginRequest } from "../config/authConfig";
+import { msalConfig, loginRequest, sharePointRequest } from "../config/authConfig";
 
 class AuthService {
   private msalInstance: PublicClientApplication;
@@ -62,7 +62,7 @@ class AuthService {
   }
 
   /**
-   * Obtiene el token de acceso
+   * Obtiene el token de acceso para Microsoft Graph API
    * Intenta obtenerlo silenciosamente, si falla solicita interacción
    */
   async getAccessToken(): Promise<string> {
@@ -87,6 +87,39 @@ class AuthService {
         );
         return response.accessToken;
       }
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene el token de acceso específico para SharePoint REST API (adjuntos)
+   * Intenta obtenerlo silenciosamente, si falla solicita interacción
+   */
+  async getSharePointToken(): Promise<string> {
+    const account = this.getAccount();
+
+    if (!account) {
+      throw new Error("No hay cuenta activa. Por favor inicia sesión.");
+    }
+
+    try {
+      // Intenta obtener el token silenciosamente para SharePoint
+      const response = await this.msalInstance.acquireTokenSilent({
+        ...sharePointRequest,
+        account: account,
+      });
+      console.log("🔑 Token de SharePoint obtenido exitosamente");
+      return response.accessToken;
+    } catch (error) {
+      // Si falla, solicita interacción del usuario
+      if (error instanceof InteractionRequiredAuthError) {
+        console.log("🔄 Solicitando autorización para SharePoint...");
+        const response = await this.msalInstance.acquireTokenPopup(
+          sharePointRequest
+        );
+        return response.accessToken;
+      }
+      console.error("❌ Error obteniendo token de SharePoint:", error);
       throw error;
     }
   }
