@@ -3,9 +3,9 @@
  * Muestra las columnas más importantes
  */
 
-import React, { useState, useMemo } from "react";
-import { SharePointListItem } from "../services/sharePointService";
-import { Edit2, Trash2, TestTube2, ChevronDown, ChevronUp, Search, X } from "lucide-react";
+import React, { useState, useMemo, useEffect } from "react";
+import { SharePointListItem, sharePointService } from "../services/sharePointService";
+import { Edit2, Trash2, TestTube2, ChevronDown, ChevronUp, Search, X, Paperclip, Download, FileIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { getFieldValue, calcularPorcentajeAvance } from "../utils/sharePointFieldMapping";
@@ -26,6 +26,8 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
 }) => {
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [serieFilter, setSerieFilter] = useState<string>("");
+  const [attachments, setAttachments] = useState<Record<string, any[]>>({});
+  const [loadingAttachments, setLoadingAttachments] = useState<Record<string, boolean>>({});
 
   // Función helper para obtener porcentaje de avance
   const getPorcentajeAvance = (fields: Record<string, any>) => {
@@ -77,8 +79,50 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
 
   // Prioridad es solo un número, sin colores ni texto especial
 
+  // Cargar adjuntos cuando se expande una fila
+  useEffect(() => {
+    const loadAttachments = async (itemId: string) => {
+      if (!useMockData && !attachments[itemId] && !loadingAttachments[itemId]) {
+        setLoadingAttachments(prev => ({ ...prev, [itemId]: true }));
+        try {
+          const files = await sharePointService.getItemAttachments(itemId);
+          setAttachments(prev => ({ ...prev, [itemId]: files }));
+        } catch (error) {
+          console.error(`Error cargando adjuntos para item ${itemId}:`, error);
+          setAttachments(prev => ({ ...prev, [itemId]: [] }));
+        } finally {
+          setLoadingAttachments(prev => ({ ...prev, [itemId]: false }));
+        }
+      }
+    };
+
+    if (expandedRow) {
+      loadAttachments(expandedRow);
+    }
+  }, [expandedRow, useMockData, attachments, loadingAttachments]);
+
   const toggleRow = (id: string) => {
     setExpandedRow(expandedRow === id ? null : id);
+  };
+
+  // Nombres de las fases
+  const faseNombres: Record<number, string> = {
+    1: "LAVADO INICIAL",
+    2: "INSPECCION",
+    3: "DESENSAMBLE / ENSAMBLE INICIAL",
+    4: "INSPECCION AJUSTES",
+    5: "DESINSTALACION COMPONENTES MAYORES",
+    6: "SOLDADURA / TORNO",
+    7: "CABINA",
+    8: "RODAJE / CILINDROS",
+    9: "REPARACION COMPONENTES MAYORES",
+    10: "ELECTRICIDAD / MISCELANEOS / CORRECCION FUGAS",
+    11: "INSTALACION COMPONENTES MAYORES",
+    12: "ENSAMBLE FINAL",
+    13: "MANTENIMIENTO PREVENTIVO",
+    14: "LAVADO PARA PINTURA",
+    15: "PINTURA",
+    16: "PREENTREGA",
   };
 
   return (
@@ -310,6 +354,47 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
                                 {getFieldValue(item.fields, "Observaciones") || "-"}
                               </p>
                             </div>
+                            
+                            {/* Adjuntos */}
+                            <div className="mt-4 pt-4 border-t border-gray-200">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Paperclip className="w-4 h-4 text-gray-600" />
+                                <span className="text-xs font-semibold text-gray-700">
+                                  Archivos Adjuntos
+                                </span>
+                              </div>
+                              {loadingAttachments[item.id] ? (
+                                <div className="flex items-center gap-2 text-sm text-gray-500">
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  <span>Cargando adjuntos...</span>
+                                </div>
+                              ) : attachments[item.id] && attachments[item.id].length > 0 ? (
+                                <div className="space-y-1.5">
+                                  {attachments[item.id].map((file: any, index: number) => (
+                                    <a
+                                      key={index}
+                                      href={file["@microsoft.graph.downloadUrl"] || file.webUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-colors group"
+                                    >
+                                      <FileIcon className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                      <span className="text-xs text-gray-900 truncate flex-1">
+                                        {file.name}
+                                      </span>
+                                      <span className="text-xs text-gray-500">
+                                        {file.size ? `${(file.size / 1024).toFixed(0)} KB` : ""}
+                                      </span>
+                                      <Download className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-600 flex-shrink-0" />
+                                    </a>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-gray-400 italic">
+                                  Sin archivos adjuntos
+                                </p>
+                              )}
+                            </div>
                           </div>
 
                           {/* Fechas */}
@@ -358,11 +443,11 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
                           </div>
 
                           {/* Fases */}
-                          <div className="space-y-2">
+                          <div className="space-y-2 md:col-span-2">
                             <h4 className="font-semibold text-gray-900 mb-3">
-                              Estado de Fases
+                              Estado de Fases (F1-F16)
                             </h4>
-                            <div className="grid grid-cols-4 gap-2">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                               {Array.from({ length: 16 }, (_, i) => i + 1).map(
                                 (num) => {
                                   const porcentaje =
@@ -370,37 +455,58 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
                                   const bgColor =
                                     porcentaje === "100%"
                                       ? "bg-green-500"
+                                      : porcentaje === "75%"
+                                      ? "bg-lime-500"
                                       : porcentaje === "50%"
-                                      ? "bg-blue-500"
-                                      : "bg-gray-300";
+                                      ? "bg-yellow-500"
+                                      : porcentaje === "25%"
+                                      ? "bg-orange-500"
+                                      : "bg-red-500";
                                   return (
                                     <div
                                       key={`F${num}`}
-                                      className="text-center"
-                                      title={`F${num}: ${porcentaje}`}
+                                      className="bg-white rounded-lg border border-gray-200 p-2 hover:shadow-md transition-shadow"
+                                      title={`${faseNombres[num]}: ${porcentaje}`}
                                     >
-                                      <div
-                                        className={`${bgColor} text-white text-xs font-bold rounded px-2 py-1`}
-                                      >
-                                        {porcentaje}
+                                      <div className="flex items-center justify-between mb-1">
+                                        <span className="text-xs font-bold text-gray-700">F{num}</span>
+                                        <div
+                                          className={`${bgColor} text-white text-xs font-bold rounded px-2 py-0.5`}
+                                        >
+                                          {porcentaje}
+                                        </div>
                                       </div>
+                                      <p className="text-[10px] text-gray-500 leading-tight">
+                                        {faseNombres[num]}
+                                      </p>
                                     </div>
                                   );
                                 }
                               )}
                             </div>
-                            <div className="flex gap-4 text-xs mt-3">
+                            
+                            {/* Leyenda actualizada */}
+                            <div className="flex flex-wrap gap-3 text-xs mt-4 p-3 bg-gray-100 rounded-lg">
+                              <span className="font-semibold text-gray-700">Leyenda:</span>
                               <div className="flex items-center gap-1">
-                                <div className="w-3 h-3 bg-green-500 rounded"></div>
-                                <span>100%</span>
+                                <div className="w-4 h-4 bg-green-500 rounded shadow-sm"></div>
+                                <span className="font-medium">100% - Completada</span>
                               </div>
                               <div className="flex items-center gap-1">
-                                <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                                <span>50%</span>
+                                <div className="w-4 h-4 bg-lime-500 rounded shadow-sm"></div>
+                                <span className="font-medium">75% - Avanzada</span>
                               </div>
                               <div className="flex items-center gap-1">
-                                <div className="w-3 h-3 bg-gray-300 rounded"></div>
-                                <span>0%</span>
+                                <div className="w-4 h-4 bg-yellow-500 rounded shadow-sm"></div>
+                                <span className="font-medium">50% - En Progreso</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <div className="w-4 h-4 bg-orange-500 rounded shadow-sm"></div>
+                                <span className="font-medium">25% - Iniciada</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <div className="w-4 h-4 bg-red-500 rounded shadow-sm"></div>
+                                <span className="font-medium">0% - No Iniciada</span>
                               </div>
                             </div>
                           </div>

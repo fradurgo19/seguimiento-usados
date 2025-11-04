@@ -197,6 +197,10 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
     "ZX130L-5B",
     "ASC70D",
     "ZX120-6",
+    "ZX50U-5B",
+    "ZX130K-6",
+    "ZX225USR-6",
+    "ZX300-6N",
   ];
 
   // Asesores reales de Partequipos
