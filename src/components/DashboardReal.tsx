@@ -641,19 +641,19 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
           <table className="divide-y divide-gray-200" style={{ minWidth: 'max-content', width: '100%' }}>
             <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
-                <th className="px-4 py-3 sticky left-0 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase z-20">
+                <th className="px-4 py-3 sticky left-0 bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 shadow-sm">
                   Prioridad
                 </th>
-                <th className="px-4 py-3 sticky left-[100px] bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase z-20">
+                <th className="px-4 py-3 sticky left-[100px] bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 shadow-sm">
                   Serie
                 </th>
-                <th className="px-4 py-3 sticky left-[220px] bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase z-20">
+                <th className="px-4 py-3 sticky left-[220px] bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 shadow-sm">
                   OTT
                 </th>
-                <th className="px-4 py-3 sticky left-[340px] bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase z-20">
+                <th className="px-4 py-3 sticky left-[340px] bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 shadow-sm">
                   Modelo
                 </th>
-                <th className="px-4 py-3 sticky left-[460px] bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase z-20">
+                <th className="px-4 py-3 sticky left-[460px] bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 shadow-sm">
                   Asesor
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -665,36 +665,15 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   % Avance
                 </th>
-                {(() => {
-                  // Calcular qué fases están incompletas (al menos un registro no está al 100%)
-                  const fasesIncompletas: number[] = [];
-                  const fasesCompletas: number[] = [];
-                  
-                  for (let i = 1; i <= 16; i++) {
-                    const tieneIncompletas = items.some((item) => {
-                      const faseValue = getFieldValue(item.fields, `F${i}`) || "0%";
-                      return faseValue !== "100%";
-                    });
-                    
-                    if (tieneIncompletas) {
-                      fasesIncompletas.push(i);
-                    } else {
-                      fasesCompletas.push(i);
-                    }
-                  }
-                  
-                  // Primero las incompletas, luego las completas
-                  const fasesOrdenadas = [...fasesIncompletas, ...fasesCompletas];
-                  
-                  return fasesOrdenadas.map((num) => (
-                    <th
-                      key={`F${num}`}
-                      className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase"
-                    >
-                      F{num}
-                    </th>
-                  ));
-                })()}
+                {/* Fases ordenadas de F1 a F16 de izquierda a derecha */}
+                {Array.from({ length: 16 }, (_, i) => i + 1).map((num) => (
+                  <th
+                    key={`F${num}`}
+                    className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase"
+                  >
+                    F{num}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -717,27 +696,29 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
 
                 const getFaseColor = (porcentaje: string) => {
                   if (porcentaje === "100%") return "bg-green-500 text-white";
+                  if (porcentaje === "75%") return "bg-lime-500 text-white";
                   if (porcentaje === "50%") return "bg-yellow-500 text-white";
+                  if (porcentaje === "25%") return "bg-orange-500 text-white";
                   return "bg-red-500 text-white";
                 };
 
                 return (
                   <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 sticky left-0 bg-white z-10">
+                    <td className="px-4 py-3 sticky left-0 bg-blue-50 z-10 shadow-sm">
                       <span className="inline-flex px-2 py-1 text-xs font-medium text-gray-900">
                         {prioridadValue}
                       </span>
                     </td>
-                    <td className="px-4 py-3 sticky left-[100px] bg-white text-sm text-gray-900 whitespace-nowrap z-10">
+                    <td className="px-4 py-3 sticky left-[100px] bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 shadow-sm">
                       {getFieldValue(item.fields, "Serie")}
                     </td>
-                    <td className="px-4 py-3 sticky left-[220px] bg-white text-sm text-gray-900 whitespace-nowrap z-10">
+                    <td className="px-4 py-3 sticky left-[220px] bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 shadow-sm">
                       {getFieldValue(item.fields, "OTT")}
                     </td>
-                    <td className="px-4 py-3 sticky left-[340px] bg-white text-sm text-gray-900 whitespace-nowrap z-10">
+                    <td className="px-4 py-3 sticky left-[340px] bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 shadow-sm">
                       {getFieldValue(item.fields, "Modelo")}
                     </td>
-                    <td className="px-4 py-3 sticky left-[460px] bg-white text-sm text-gray-900 whitespace-nowrap z-10">
+                    <td className="px-4 py-3 sticky left-[460px] bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 shadow-sm">
                       {getFieldValue(item.fields, "Asesor")}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
@@ -749,44 +730,24 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                     <td className="px-4 py-3 text-sm font-bold text-gray-900 whitespace-nowrap">
                       {getPorcentajeAvance(item.fields)}%
                     </td>
-                    {(() => {
-                      // Usar el mismo orden de fases que en el header
-                      const fasesIncompletas: number[] = [];
-                      const fasesCompletas: number[] = [];
-                      
-                      for (let i = 1; i <= 16; i++) {
-                        const tieneIncompletas = items.some((item) => {
-                          const faseValue = getFieldValue(item.fields, `F${i}`) || "0%";
-                          return faseValue !== "100%";
-                        });
-                        
-                        if (tieneIncompletas) {
-                          fasesIncompletas.push(i);
-                        } else {
-                          fasesCompletas.push(i);
-                        }
-                      }
-                      
-                      const fasesOrdenadas = [...fasesIncompletas, ...fasesCompletas];
-                      
-                      return fasesOrdenadas.map((num) => {
-                        const porcentaje = getFieldValue(item.fields, `F${num}`) || "0%";
-                        return (
-                          <td
-                            key={`${item.id}-F${num}`}
-                            className="px-3 py-3 text-center"
+                    {/* Fases ordenadas de F1 a F16 de izquierda a derecha */}
+                    {Array.from({ length: 16 }, (_, i) => i + 1).map((num) => {
+                      const porcentaje = getFieldValue(item.fields, `F${num}`) || "0%";
+                      return (
+                        <td
+                          key={`${item.id}-F${num}`}
+                          className="px-3 py-3 text-center"
+                        >
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-bold rounded ${getFaseColor(
+                              porcentaje
+                            )}`}
                           >
-                            <span
-                              className={`inline-flex px-2 py-1 text-xs font-bold rounded ${getFaseColor(
-                                porcentaje
-                              )}`}
-                            >
-                              {porcentaje}
-                            </span>
-                          </td>
-                        );
-                      });
-                    })()}
+                            {porcentaje}
+                          </span>
+                        </td>
+                      );
+                    })}
                   </tr>
                 );
               })}
