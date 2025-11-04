@@ -414,17 +414,18 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
 
           {/* Últimos Registros Creados y Editados */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-blue-600" />
               Últimos Registros Creados y Editados
             </h3>
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Últimos Creados */}
-              <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-blue-600" />
+              <div className="border border-blue-200 rounded-lg p-4 bg-gradient-to-br from-blue-50 to-white">
+                <h4 className="text-sm font-bold text-blue-700 mb-3 flex items-center gap-2 border-b border-blue-200 pb-2">
+                  <TrendingUp className="w-4 h-4" />
                   Recientemente Creados
                 </h4>
-                <div className="space-y-2 max-h-[120px] overflow-y-auto">
+                <div className="space-y-2 max-h-[320px] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
                   {items
                     .filter((item) => item.createdDateTime)
                     .sort((a, b) => {
@@ -432,7 +433,7 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                       const dateB = new Date(b.createdDateTime || 0).getTime();
                       return dateB - dateA; // Más reciente primero
                     })
-                    .slice(0, 5)
+                    .slice(0, 12)
                     .map((item) => {
                       const createdDate = item.createdDateTime 
                         ? new Date(item.createdDateTime).toLocaleDateString("es-CO", {
@@ -446,26 +447,28 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                       return (
                         <div
                           key={`created-${item.id}`}
-                          className="p-2 bg-blue-50 rounded border border-blue-200"
+                          className="p-3 bg-white rounded-lg border border-blue-300 hover:shadow-md transition-shadow duration-200"
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">
+                              <p className="text-sm font-semibold text-gray-900 truncate">
                                 {getFieldValue(item.fields, "Title") || getFieldValue(item.fields, "Serie") || "Sin título"}
                               </p>
-                              <p className="text-xs text-gray-600">
-                                {getFieldValue(item.fields, "Modelo")} - {getFieldValue(item.fields, "Asesor")}
+                              <p className="text-xs text-gray-600 mt-1">
+                                📦 {getFieldValue(item.fields, "Modelo")} • 👤 {getFieldValue(item.fields, "Asesor")}
                               </p>
                             </div>
-                            <p className="text-xs text-gray-500 ml-2 whitespace-nowrap">
-                              {createdDate}
-                            </p>
+                            <div className="ml-3 text-right">
+                              <p className="text-xs font-medium text-blue-700 whitespace-nowrap">
+                                {createdDate}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       );
                     })}
                   {items.filter((item) => item.createdDateTime).length === 0 && (
-                    <p className="text-center text-gray-500 py-2 text-sm">
+                    <p className="text-center text-gray-500 py-4 text-sm">
                       No hay registros creados
                     </p>
                   )}
@@ -473,12 +476,12 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
               </div>
 
               {/* Últimos Editados */}
-              <div className="border-t border-gray-200 pt-3">
-                <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-green-600" />
+              <div className="border border-green-200 rounded-lg p-4 bg-gradient-to-br from-green-50 to-white">
+                <h4 className="text-sm font-bold text-green-700 mb-3 flex items-center gap-2 border-b border-green-200 pb-2">
+                  <Clock className="w-4 h-4" />
                   Recientemente Editados
                 </h4>
-                <div className="space-y-2 max-h-[120px] overflow-y-auto">
+                <div className="space-y-2 max-h-[320px] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
                   {items
                     .filter((item) => item.lastModifiedDateTime)
                     .sort((a, b) => {
@@ -486,7 +489,7 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                       const dateB = new Date(b.lastModifiedDateTime || 0).getTime();
                       return dateB - dateA; // Más reciente primero
                     })
-                    .slice(0, 5)
+                    .slice(0, 12)
                     .map((item) => {
                       const modifiedDate = item.lastModifiedDateTime 
                         ? new Date(item.lastModifiedDateTime).toLocaleDateString("es-CO", {
@@ -500,26 +503,28 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                       return (
                         <div
                           key={`modified-${item.id}`}
-                          className="p-2 bg-green-50 rounded border border-green-200"
+                          className="p-3 bg-white rounded-lg border border-green-300 hover:shadow-md transition-shadow duration-200"
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">
+                              <p className="text-sm font-semibold text-gray-900 truncate">
                                 {getFieldValue(item.fields, "Title") || getFieldValue(item.fields, "Serie") || "Sin título"}
                               </p>
-                              <p className="text-xs text-gray-600">
-                                {getFieldValue(item.fields, "Modelo")} - {getFieldValue(item.fields, "Asesor")}
+                              <p className="text-xs text-gray-600 mt-1">
+                                📦 {getFieldValue(item.fields, "Modelo")} • 👤 {getFieldValue(item.fields, "Asesor")}
                               </p>
                             </div>
-                            <p className="text-xs text-gray-500 ml-2 whitespace-nowrap">
-                              {modifiedDate}
-                            </p>
+                            <div className="ml-3 text-right">
+                              <p className="text-xs font-medium text-green-700 whitespace-nowrap">
+                                {modifiedDate}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       );
                     })}
                   {items.filter((item) => item.lastModifiedDateTime).length === 0 && (
-                    <p className="text-center text-gray-500 py-2 text-sm">
+                    <p className="text-center text-gray-500 py-4 text-sm">
                       No hay registros editados
                     </p>
                   )}
@@ -641,19 +646,19 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
           <table className="divide-y divide-gray-200" style={{ minWidth: 'max-content', width: '100%' }}>
             <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
-                <th className="px-4 py-3 sticky left-0 bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 shadow-sm">
+                <th className="px-4 py-3 sticky left-0 bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 border-r-2 border-blue-200" style={{ minWidth: '100px' }}>
                   Prioridad
                 </th>
-                <th className="px-4 py-3 sticky left-[100px] bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 shadow-sm">
+                <th className="px-4 py-3 sticky bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 border-r-2 border-blue-200" style={{ left: '100px', minWidth: '120px' }}>
                   Serie
                 </th>
-                <th className="px-4 py-3 sticky left-[220px] bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 shadow-sm">
+                <th className="px-4 py-3 sticky bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 border-r-2 border-blue-200" style={{ left: '220px', minWidth: '120px' }}>
                   OTT
                 </th>
-                <th className="px-4 py-3 sticky left-[340px] bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 shadow-sm">
+                <th className="px-4 py-3 sticky bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 border-r-2 border-blue-200" style={{ left: '340px', minWidth: '120px' }}>
                   Modelo
                 </th>
-                <th className="px-4 py-3 sticky left-[460px] bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 shadow-sm">
+                <th className="px-4 py-3 sticky bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 border-r-4 border-blue-300 shadow-lg" style={{ left: '460px', minWidth: '120px' }}>
                   Asesor
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -704,21 +709,21 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
 
                 return (
                   <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 sticky left-0 bg-blue-50 z-10 shadow-sm">
+                    <td className="px-4 py-3 sticky left-0 bg-blue-50 z-10 border-r-2 border-blue-200" style={{ minWidth: '100px' }}>
                       <span className="inline-flex px-2 py-1 text-xs font-medium text-gray-900">
                         {prioridadValue}
                       </span>
                     </td>
-                    <td className="px-4 py-3 sticky left-[100px] bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 shadow-sm">
+                    <td className="px-4 py-3 sticky bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 border-r-2 border-blue-200" style={{ left: '100px', minWidth: '120px' }}>
                       {getFieldValue(item.fields, "Serie")}
                     </td>
-                    <td className="px-4 py-3 sticky left-[220px] bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 shadow-sm">
+                    <td className="px-4 py-3 sticky bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 border-r-2 border-blue-200" style={{ left: '220px', minWidth: '120px' }}>
                       {getFieldValue(item.fields, "OTT")}
                     </td>
-                    <td className="px-4 py-3 sticky left-[340px] bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 shadow-sm">
+                    <td className="px-4 py-3 sticky bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 border-r-2 border-blue-200" style={{ left: '340px', minWidth: '120px' }}>
                       {getFieldValue(item.fields, "Modelo")}
                     </td>
-                    <td className="px-4 py-3 sticky left-[460px] bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 shadow-sm">
+                    <td className="px-4 py-3 sticky bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 border-r-4 border-blue-300 shadow-lg" style={{ left: '460px', minWidth: '120px' }}>
                       {getFieldValue(item.fields, "Asesor")}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
@@ -756,26 +761,38 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
         </div>
         
         {/* Leyenda */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-          <div className="flex items-center gap-6 text-sm">
-            <span className="font-medium text-gray-700">Leyenda de Fases:</span>
+        <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200">
+          <div className="flex items-center gap-4 text-sm flex-wrap">
+            <span className="font-semibold text-gray-800">📊 Leyenda de Fases:</span>
             <div className="flex items-center gap-2">
-              <span className="inline-flex px-2 py-1 text-xs font-bold rounded bg-green-500 text-white">
+              <span className="inline-flex px-3 py-1 text-xs font-bold rounded-lg bg-green-500 text-white shadow-sm">
                 100%
               </span>
-              <span className="text-gray-600">Completada</span>
+              <span className="text-gray-700 font-medium">Completada</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="inline-flex px-2 py-1 text-xs font-bold rounded bg-yellow-500 text-white">
+              <span className="inline-flex px-3 py-1 text-xs font-bold rounded-lg bg-lime-500 text-white shadow-sm">
+                75%
+              </span>
+              <span className="text-gray-700 font-medium">Avanzada</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex px-3 py-1 text-xs font-bold rounded-lg bg-yellow-500 text-white shadow-sm">
                 50%
               </span>
-              <span className="text-gray-600">En Progreso</span>
+              <span className="text-gray-700 font-medium">En Progreso</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="inline-flex px-2 py-1 text-xs font-bold rounded bg-red-500 text-white">
+              <span className="inline-flex px-3 py-1 text-xs font-bold rounded-lg bg-orange-500 text-white shadow-sm">
+                25%
+              </span>
+              <span className="text-gray-700 font-medium">Iniciada</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex px-3 py-1 text-xs font-bold rounded-lg bg-red-500 text-white shadow-sm">
                 0%
               </span>
-              <span className="text-gray-600">No Iniciada</span>
+              <span className="text-gray-700 font-medium">No Iniciada</span>
             </div>
           </div>
         </div>
