@@ -257,23 +257,40 @@ function AppContent() {
         }
 
         const newItem = await sharePointService.createListItem(sharePointFields);
+        console.log(`✅ Equipo creado con ID: ${newItem.id}`);
         
         // Subir archivos adjuntos si existen
+        let uploadedCount = 0;
+        let failedCount = 0;
         if (files && files.length > 0) {
-          console.log(`📎 Subiendo ${files.length} archivo(s)...`);
+          console.log(`📎 Iniciando subida de ${files.length} archivo(s)...`);
+          
+          // Esperar un momento para que SharePoint procese el item
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
           for (const file of files) {
             try {
+              console.log(`⬆️ Subiendo: ${file.name}...`);
               await sharePointService.uploadAttachment(newItem.id, file);
-            } catch (fileError) {
-              console.error(`Error subiendo ${file.name}:`, fileError);
-              // Continuar con los demás archivos
+              uploadedCount++;
+            } catch (fileError: any) {
+              console.error(`❌ Error subiendo ${file.name}:`, fileError);
+              console.error("Detalles:", fileError.response?.data);
+              failedCount++;
             }
           }
+          
+          console.log(`📊 Resultado: ${uploadedCount} exitosos, ${failedCount} fallidos`);
         }
 
         await loadRealData();
         setShowForm(false);
-        alert("Equipo agregado exitosamente" + (files && files.length > 0 ? ` con ${files.length} archivo(s)` : ""));
+        
+        const message = files && files.length > 0
+          ? `Equipo agregado exitosamente. Archivos: ${uploadedCount} subidos` + (failedCount > 0 ? `, ${failedCount} fallidos` : "")
+          : "Equipo agregado exitosamente";
+        
+        alert(message);
       } catch (error: any) {
         console.error("Error adding vehicle:", error);
         const errorMessage = error.response?.data?.error?.message || error.message || "Error desconocido";
@@ -367,23 +384,40 @@ function AppContent() {
         }
         
         await sharePointService.updateListItem(editingVehicle.id, sharePointFields);
+        console.log(`✅ Equipo actualizado con ID: ${editingVehicle.id}`);
         
         // Subir archivos adjuntos si existen
+        let uploadedCount = 0;
+        let failedCount = 0;
         if (files && files.length > 0) {
-          console.log(`📎 Subiendo ${files.length} archivo(s)...`);
+          console.log(`📎 Iniciando subida de ${files.length} archivo(s)...`);
+          
+          // Esperar un momento para que SharePoint procese la actualización
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
           for (const file of files) {
             try {
+              console.log(`⬆️ Subiendo: ${file.name}...`);
               await sharePointService.uploadAttachment(editingVehicle.id, file);
-            } catch (fileError) {
-              console.error(`Error subiendo ${file.name}:`, fileError);
-              // Continuar con los demás archivos
+              uploadedCount++;
+            } catch (fileError: any) {
+              console.error(`❌ Error subiendo ${file.name}:`, fileError);
+              console.error("Detalles:", fileError.response?.data);
+              failedCount++;
             }
           }
+          
+          console.log(`📊 Resultado: ${uploadedCount} exitosos, ${failedCount} fallidos`);
         }
 
         await loadRealData();
         setEditingVehicle(null);
-        alert("Equipo actualizado exitosamente" + (files && files.length > 0 ? ` con ${files.length} archivo(s)` : ""));
+        
+        const message = files && files.length > 0
+          ? `Equipo actualizado exitosamente. Archivos: ${uploadedCount} subidos` + (failedCount > 0 ? `, ${failedCount} fallidos` : "")
+          : "Equipo actualizado exitosamente";
+        
+        alert(message);
       } catch (error: any) {
         console.error("Error updating vehicle:", error);
         const errorMessage = error.response?.data?.error?.message || error.message || "Error desconocido";

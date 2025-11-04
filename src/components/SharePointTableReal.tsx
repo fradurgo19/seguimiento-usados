@@ -370,24 +370,28 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
                                 </div>
                               ) : attachments[item.id] && attachments[item.id].length > 0 ? (
                                 <div className="space-y-1.5">
-                                  {attachments[item.id].map((file: any, index: number) => (
-                                    <a
-                                      key={index}
-                                      href={file["@microsoft.graph.downloadUrl"] || file.webUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-colors group"
-                                    >
-                                      <FileIcon className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                                      <span className="text-xs text-gray-900 truncate flex-1">
-                                        {file.name}
-                                      </span>
-                                      <span className="text-xs text-gray-500">
-                                        {file.size ? `${(file.size / 1024).toFixed(0)} KB` : ""}
-                                      </span>
-                                      <Download className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-600 flex-shrink-0" />
-                                    </a>
-                                  ))}
+                                  {attachments[item.id].map((file: any, index: number) => {
+                                    // SharePoint REST API devuelve ServerRelativeUrl
+                                    const fileUrl = file.ServerRelativeUrl 
+                                      ? `${window.location.protocol}//${window.location.hostname}${file.ServerRelativeUrl}`
+                                      : file["@microsoft.graph.downloadUrl"] || file.webUrl;
+                                    
+                                    return (
+                                      <a
+                                        key={index}
+                                        href={fileUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-colors group"
+                                      >
+                                        <FileIcon className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                        <span className="text-xs text-gray-900 truncate flex-1">
+                                          {file.FileName || file.name}
+                                        </span>
+                                        <Download className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-600 flex-shrink-0" />
+                                      </a>
+                                    );
+                                  })}
                                 </div>
                               ) : (
                                 <p className="text-xs text-gray-400 italic">

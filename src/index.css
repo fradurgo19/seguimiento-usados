@@ -1,3 +1,41 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Estilos personalizados para scrollbars en secciones de registros */
+.registros-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.registros-scroll::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.registros-scroll::-webkit-scrollbar-thumb {
+  background: #3b82f6;
+  border-radius: 4px;
+}
+
+.registros-scroll::-webkit-scrollbar-thumb:hover {
+  background: #2563eb;
+}
+
+/* Scrollbar verde para sección de editados */
+.registros-scroll-green::-webkit-scrollbar {
+  width: 8px;
+}
+
+.registros-scroll-green::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.registros-scroll-green::-webkit-scrollbar-thumb {
+  background: #10b981;
+  border-radius: 4px;
+}
+
+.registros-scroll-green::-webkit-scrollbar-thumb:hover {
+  background: #059669;
+}

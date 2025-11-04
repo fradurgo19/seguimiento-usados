@@ -430,7 +430,15 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                   <TrendingUp className="w-4 h-4" />
                   Recientemente Creados
                 </h4>
-                <div className="space-y-2 flex-1 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
+                <div 
+                  className="space-y-2 flex-1 overflow-y-auto pr-1 registros-scroll" 
+                  style={{ 
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#3b82f6 #e5e7eb',
+                    maxHeight: '100%',
+                    overflowY: 'scroll' /* Forzar scrollbar siempre visible */
+                  }}
+                >
                   {items
                     .filter((item) => item.createdDateTime)
                     .sort((a, b) => {
@@ -438,7 +446,7 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                       const dateB = new Date(b.createdDateTime || 0).getTime();
                       return dateB - dateA; // Más reciente primero
                     })
-                    .slice(0, 12)
+                    .slice(0, 20)
                     .map((item) => {
                       const createdDate = item.createdDateTime 
                         ? new Date(item.createdDateTime).toLocaleDateString("es-CO", {
@@ -486,7 +494,15 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                   <Clock className="w-4 h-4" />
                   Recientemente Editados
                 </h4>
-                <div className="space-y-2 flex-1 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
+                <div 
+                  className="space-y-2 flex-1 overflow-y-auto pr-1 registros-scroll-green" 
+                  style={{ 
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#10b981 #e5e7eb',
+                    maxHeight: '100%',
+                    overflowY: 'scroll' /* Forzar scrollbar siempre visible */
+                  }}
+                >
                   {items
                     .filter((item) => item.lastModifiedDateTime)
                     .sort((a, b) => {
@@ -494,7 +510,7 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                       const dateB = new Date(b.lastModifiedDateTime || 0).getTime();
                       return dateB - dateA; // Más reciente primero
                     })
-                    .slice(0, 12)
+                    .slice(0, 20)
                     .map((item) => {
                       const modifiedDate = item.lastModifiedDateTime 
                         ? new Date(item.lastModifiedDateTime).toLocaleDateString("es-CO", {

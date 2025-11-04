@@ -286,76 +286,150 @@ class SharePointService {
   }
 
   /**
-   * Obtiene los adjuntos de un item
+   * Obtiene los adjuntos de un item usando SharePoint REST API
    */
   async getItemAttachments(itemId: string): Promise<any[]> {
     try {
-      const siteId = await this.getSiteId();
-      const listId = await this.getListId(siteId);
+      const token = await authService.getAccessToken();
+      const siteUrl = sharePointConfig.siteUrl;
+      const listName = sharePointConfig.listName;
+      
+      // Usar SharePoint REST API directamente para attachments
+      const restUrl = `${siteUrl}/_api/web/lists/getbytitle('${listName}')/items(${itemId})/AttachmentFiles`;
+      
+      const response = await axios.get(restUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json;odata=verbose',
+        },
+      });
 
-      const response = await this.axiosInstance.get(
-        `/sites/${siteId}/lists/${listId}/items/${itemId}/driveItem/children`
-      );
-
-      return response.data.value || [];
+      console.log(`📎 Adjuntos obtenidos para item ${itemId}:`, response.data.d?.results || []);
+      return response.data.d?.results || [];
     } catch (error: any) {
       // Si el error es 404, significa que no hay adjuntos
       if (error.response?.status === 404) {
         return [];
       }
       console.error("Error obteniendo adjuntos:", error);
-      throw error;
+      return []; // Devolver array vacío en lugar de error
     }
   }
 
   /**
-   * Sube un adjunto a un item
+   * Sube un adjunto a un item usando SharePoint REST API
    */
   async uploadAttachment(
     itemId: string,
     file: File
   ): Promise<any> {
     try {
-      const siteId = await this.getSiteId();
-      const listId = await this.getListId(siteId);
+      const token = await authService.getAccessToken();
+      const siteUrl = sharePointConfig.siteUrl;
+      const listName = sharePointConfig.listName;
+
+      console.log(`📤 Intentando subir archivo: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
+      console.log(`📍 Item ID: ${itemId}`);
 
       // Leer el archivo como ArrayBuffer
       const arrayBuffer = await file.arrayBuffer();
 
-      const response = await this.axiosInstance.put(
-        `/sites/${siteId}/lists/${listId}/items/${itemId}/driveItem:/${encodeURIComponent(file.name)}:/content`,
-        arrayBuffer,
-        {
-          headers: {
-            'Content-Type': file.type || 'application/octet-stream',
-          },
-        }
-      );
+      // Usar SharePoint REST API directamente para subir attachments
+      const restUrl = `${siteUrl}/_api/web/lists/getbytitle('${listName}')/items(${itemId})/AttachmentFiles/add(FileName='${encodeURIComponent(file.name)}')`;
+      
+      console.log(`🔗 URL de upload: ${restUrl}`);
 
-      console.log(`✅ Adjunto subido exitosamente: ${file.name}`);
-      return response.data;
-    } catch (error) {
-      console.error("Error subiendo adjunto:", error);
+      // Intentar primero sin Request Digest (funciona con Azure AD tokens)
+      try {
+        const response = await axios.post(restUrl, arrayBuffer, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json;odata=verbose',
+            'Content-Type': 'application/octet-stream',
+          },
+        });
+
+        console.log(`✅ Adjunto subido exitosamente (sin digest): ${file.name}`);
+        return response.data;
+      } catch (digestError: any) {
+        // Si falla, intentar con Request Digest
+        console.log(`⚠️ Primer intento falló, intentando con Request Digest...`);
+        
+        const digest = await this.getRequestDigest();
+        const response = await axios.post(restUrl, arrayBuffer, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json;odata=verbose',
+            'Content-Type': 'application/octet-stream',
+            'X-RequestDigest': digest,
+          },
+        });
+
+        console.log(`✅ Adjunto subido exitosamente (con digest): ${file.name}`);
+        return response.data;
+      }
+    } catch (error: any) {
+      console.error(`❌ Error subiendo adjunto ${file.name}:`, error);
+      console.error("Detalles completos del error:", {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        headers: error.response?.headers,
+      });
       throw error;
     }
   }
 
   /**
-   * Elimina un adjunto de un item
+   * Obtiene el Request Digest necesario para operaciones POST/DELETE en SharePoint REST API
+   */
+  private async getRequestDigest(): Promise<string> {
+    try {
+      const token = await authService.getAccessToken();
+      const siteUrl = sharePointConfig.siteUrl;
+
+      const response = await axios.post(
+        `${siteUrl}/_api/contextinfo`,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json;odata=verbose',
+          },
+        }
+      );
+
+      return response.data.d.GetContextWebInformation.FormDigestValue;
+    } catch (error) {
+      console.error("Error obteniendo Request Digest:", error);
+      // Si falla, intentar sin digest (algunas configuraciones lo permiten)
+      return "";
+    }
+  }
+
+  /**
+   * Elimina un adjunto de un item usando SharePoint REST API
    */
   async deleteAttachment(
     itemId: string,
-    attachmentId: string
+    fileName: string
   ): Promise<void> {
     try {
-      const siteId = await this.getSiteId();
-      const listId = await this.getListId(siteId);
+      const token = await authService.getAccessToken();
+      const siteUrl = sharePointConfig.siteUrl;
+      const listName = sharePointConfig.listName;
 
-      await this.axiosInstance.delete(
-        `/sites/${siteId}/lists/${listId}/items/${itemId}/driveItem/children/${attachmentId}`
-      );
+      const restUrl = `${siteUrl}/_api/web/lists/getbytitle('${listName}')/items(${itemId})/AttachmentFiles/getByFileName('${encodeURIComponent(fileName)}')`;
 
-      console.log(`✅ Adjunto eliminado exitosamente`);
+      await axios.delete(restUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json;odata=verbose',
+          'X-RequestDigest': await this.getRequestDigest(),
+        },
+      });
+
+      console.log(`✅ Adjunto eliminado exitosamente: ${fileName}`);
     } catch (error) {
       console.error("Error eliminando adjunto:", error);
       throw error;
