@@ -5,12 +5,12 @@
 
 import React, { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
-import { X, Save, Loader2 } from "lucide-react";
+import { X, Save, Loader2, Upload, FileIcon, Trash2 } from "lucide-react";
 import { SharePointListItem } from "../services/sharePointService";
 
 interface VehicleFormProps {
   vehicle?: SharePointListItem;
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: any, files?: File[]) => Promise<void>;
   onCancel: () => void;
   isEditing?: boolean;
 }
@@ -55,6 +55,7 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentTab, setCurrentTab] = useState<"general" | "fases">("general");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   const {
     register,
@@ -122,10 +123,21 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
   const onSubmitForm = async (data: FormData) => {
     setIsSubmitting(true);
     try {
-      await onSubmit(data);
+      await onSubmit(data, selectedFiles);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setSelectedFiles((prev) => [...prev, ...files]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Observar valores del formulario para mostrar en el header
@@ -561,6 +573,66 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
                       </option>
                     ))}
                   </select>
+                </div>
+
+                {/* Adjuntos / Archivos */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    📎 Adjuntos (Fotos/Archivos)
+                  </label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 transition-colors">
+                    <div className="flex items-center justify-center">
+                      <label className="cursor-pointer flex flex-col items-center">
+                        <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                        <span className="text-sm text-gray-600">
+                          Haz clic para seleccionar archivos
+                        </span>
+                        <span className="text-xs text-gray-400 mt-1">
+                          Imágenes, PDFs, documentos (máx. 10MB por archivo)
+                        </span>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                          onChange={handleFileChange}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Lista de archivos seleccionados */}
+                  {selectedFiles.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-sm font-medium text-gray-700">
+                        Archivos seleccionados ({selectedFiles.length}):
+                      </p>
+                      {selectedFiles.map((file, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-2 bg-blue-50 rounded-lg border border-blue-200"
+                        >
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <FileIcon className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                            <span className="text-sm text-gray-900 truncate">
+                              {file.name}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              ({(file.size / 1024).toFixed(0)} KB)
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeFile(index)}
+                            className="ml-2 p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                            title="Eliminar archivo"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

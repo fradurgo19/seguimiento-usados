@@ -187,7 +187,7 @@ function AppContent() {
     }
   };
 
-  const handleAddVehicle = async (data: any) => {
+  const handleAddVehicle = async (data: any, files?: File[]) => {
     if (useMockData) {
       // Simular guardado en mock
       const newItem: SharePointListItem = {
@@ -256,10 +256,24 @@ function AppContent() {
           }
         }
 
-        await sharePointService.createListItem(sharePointFields);
+        const newItem = await sharePointService.createListItem(sharePointFields);
+        
+        // Subir archivos adjuntos si existen
+        if (files && files.length > 0) {
+          console.log(`📎 Subiendo ${files.length} archivo(s)...`);
+          for (const file of files) {
+            try {
+              await sharePointService.uploadAttachment(newItem.id, file);
+            } catch (fileError) {
+              console.error(`Error subiendo ${file.name}:`, fileError);
+              // Continuar con los demás archivos
+            }
+          }
+        }
+
         await loadRealData();
         setShowForm(false);
-        alert("Equipo agregado exitosamente");
+        alert("Equipo agregado exitosamente" + (files && files.length > 0 ? ` con ${files.length} archivo(s)` : ""));
       } catch (error: any) {
         console.error("Error adding vehicle:", error);
         const errorMessage = error.response?.data?.error?.message || error.message || "Error desconocido";
@@ -269,7 +283,7 @@ function AppContent() {
     }
   };
 
-  const handleEditVehicle = async (data: any) => {
+  const handleEditVehicle = async (data: any, files?: File[]) => {
     if (!editingVehicle) return;
 
     if (useMockData) {
@@ -353,9 +367,23 @@ function AppContent() {
         }
         
         await sharePointService.updateListItem(editingVehicle.id, sharePointFields);
+        
+        // Subir archivos adjuntos si existen
+        if (files && files.length > 0) {
+          console.log(`📎 Subiendo ${files.length} archivo(s)...`);
+          for (const file of files) {
+            try {
+              await sharePointService.uploadAttachment(editingVehicle.id, file);
+            } catch (fileError) {
+              console.error(`Error subiendo ${file.name}:`, fileError);
+              // Continuar con los demás archivos
+            }
+          }
+        }
+
         await loadRealData();
         setEditingVehicle(null);
-        alert("Equipo actualizado exitosamente");
+        alert("Equipo actualizado exitosamente" + (files && files.length > 0 ? ` con ${files.length} archivo(s)` : ""));
       } catch (error: any) {
         console.error("Error updating vehicle:", error);
         const errorMessage = error.response?.data?.error?.message || error.message || "Error desconocido";

@@ -284,6 +284,83 @@ class SharePointService {
       throw error;
     }
   }
+
+  /**
+   * Obtiene los adjuntos de un item
+   */
+  async getItemAttachments(itemId: string): Promise<any[]> {
+    try {
+      const siteId = await this.getSiteId();
+      const listId = await this.getListId(siteId);
+
+      const response = await this.axiosInstance.get(
+        `/sites/${siteId}/lists/${listId}/items/${itemId}/driveItem/children`
+      );
+
+      return response.data.value || [];
+    } catch (error: any) {
+      // Si el error es 404, significa que no hay adjuntos
+      if (error.response?.status === 404) {
+        return [];
+      }
+      console.error("Error obteniendo adjuntos:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Sube un adjunto a un item
+   */
+  async uploadAttachment(
+    itemId: string,
+    file: File
+  ): Promise<any> {
+    try {
+      const siteId = await this.getSiteId();
+      const listId = await this.getListId(siteId);
+
+      // Leer el archivo como ArrayBuffer
+      const arrayBuffer = await file.arrayBuffer();
+
+      const response = await this.axiosInstance.put(
+        `/sites/${siteId}/lists/${listId}/items/${itemId}/driveItem:/${encodeURIComponent(file.name)}:/content`,
+        arrayBuffer,
+        {
+          headers: {
+            'Content-Type': file.type || 'application/octet-stream',
+          },
+        }
+      );
+
+      console.log(`✅ Adjunto subido exitosamente: ${file.name}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error subiendo adjunto:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Elimina un adjunto de un item
+   */
+  async deleteAttachment(
+    itemId: string,
+    attachmentId: string
+  ): Promise<void> {
+    try {
+      const siteId = await this.getSiteId();
+      const listId = await this.getListId(siteId);
+
+      await this.axiosInstance.delete(
+        `/sites/${siteId}/lists/${listId}/items/${itemId}/driveItem/children/${attachmentId}`
+      );
+
+      console.log(`✅ Adjunto eliminado exitosamente`);
+    } catch (error) {
+      console.error("Error eliminando adjunto:", error);
+      throw error;
+    }
+  }
 }
 
 // Singleton

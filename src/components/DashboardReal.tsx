@@ -388,20 +388,25 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Progreso por Equipo
             </h3>
-            <div className="space-y-3 max-h-[600px] overflow-y-auto">
+            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
               {sortedItems.slice(0, 20).map((item) => (
-                <div key={item.id}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-medium text-gray-900">
-                      {getFieldValue(item.fields, "Title") || "-"}
-                    </span>
-                    <span className="text-gray-600">
+                <div key={item.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 truncate text-sm">
+                        {getFieldValue(item.fields, "Title") || "-"}
+                      </p>
+                      <p className="text-xs text-gray-600 truncate mt-1">
+                        📦 {getFieldValue(item.fields, "Modelo")} • S/N: {getFieldValue(item.fields, "Serie")}
+                      </p>
+                    </div>
+                    <span className="ml-3 text-lg font-bold text-blue-600">
                       {getPorcentajeAvance(item.fields)}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
                     <div
-                      className="bg-blue-600 h-2 rounded-full transition-all"
+                      className="bg-gradient-to-r from-blue-500 to-blue-600 h-2.5 rounded-full transition-all duration-300 shadow-sm"
                       style={{
                         width: `${getPorcentajeAvance(item.fields)}%`,
                       }}
@@ -413,19 +418,19 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
           </div>
 
           {/* Últimos Registros Creados y Editados */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-6 flex flex-col" style={{ height: '600px' }}>
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <Clock className="w-5 h-5 text-blue-600" />
               Últimos Registros Creados y Editados
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-hidden">
               {/* Últimos Creados */}
-              <div className="border border-blue-200 rounded-lg p-4 bg-gradient-to-br from-blue-50 to-white">
+              <div className="border border-blue-200 rounded-lg p-4 bg-gradient-to-br from-blue-50 to-white flex flex-col">
                 <h4 className="text-sm font-bold text-blue-700 mb-3 flex items-center gap-2 border-b border-blue-200 pb-2">
                   <TrendingUp className="w-4 h-4" />
                   Recientemente Creados
                 </h4>
-                <div className="space-y-2 max-h-[320px] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
+                <div className="space-y-2 flex-1 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
                   {items
                     .filter((item) => item.createdDateTime)
                     .sort((a, b) => {
@@ -476,12 +481,12 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
               </div>
 
               {/* Últimos Editados */}
-              <div className="border border-green-200 rounded-lg p-4 bg-gradient-to-br from-green-50 to-white">
+              <div className="border border-green-200 rounded-lg p-4 bg-gradient-to-br from-green-50 to-white flex flex-col">
                 <h4 className="text-sm font-bold text-green-700 mb-3 flex items-center gap-2 border-b border-green-200 pb-2">
                   <Clock className="w-4 h-4" />
                   Recientemente Editados
                 </h4>
-                <div className="space-y-2 max-h-[320px] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
+                <div className="space-y-2 flex-1 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
                   {items
                     .filter((item) => item.lastModifiedDateTime)
                     .sort((a, b) => {
@@ -585,20 +590,23 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
             .map((item) => (
               <div
                 key={item.id}
-                className="flex flex-col p-3 bg-red-50 rounded-lg border border-red-200"
+                className="flex flex-col p-3 bg-red-50 rounded-lg border border-red-200 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-center gap-2 mb-2">
                   <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 truncate text-sm">
-                      {getFieldValue(item.fields, "Title")} - {getFieldValue(item.fields, "Modelo")}
+                    <p className="font-semibold text-gray-900 truncate text-sm">
+                      {getFieldValue(item.fields, "Title")}
                     </p>
-                    <p className="text-xs text-gray-600 truncate">
-                      {getFieldValue(item.fields, "Asesor")}
+                    <p className="text-xs text-gray-700 truncate mt-1">
+                      📦 {getFieldValue(item.fields, "Modelo")} • S/N: {getFieldValue(item.fields, "Serie")}
+                    </p>
+                    <p className="text-xs text-gray-600 truncate mt-0.5">
+                      👤 {getFieldValue(item.fields, "Asesor")}
                     </p>
                   </div>
                 </div>
-                <div className="text-center mt-auto">
+                <div className="text-center mt-auto pt-2 border-t border-red-200">
                   <p className="text-2xl font-bold text-red-600">
                     {Number(getFieldValue(item.fields, "DiasRestantes")) || 0}
                   </p>
@@ -646,19 +654,19 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
           <table className="divide-y divide-gray-200" style={{ minWidth: 'max-content', width: '100%' }}>
             <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
-                <th className="px-4 py-3 sticky left-0 bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 border-r-2 border-blue-200" style={{ minWidth: '100px' }}>
+                <th className="px-4 py-3 sticky bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 border-r border-blue-300" style={{ left: '0px', width: '110px' }}>
                   Prioridad
                 </th>
-                <th className="px-4 py-3 sticky bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 border-r-2 border-blue-200" style={{ left: '100px', minWidth: '120px' }}>
+                <th className="px-4 py-3 sticky bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 border-r border-blue-300" style={{ left: '110px', width: '130px' }}>
                   Serie
                 </th>
-                <th className="px-4 py-3 sticky bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 border-r-2 border-blue-200" style={{ left: '220px', minWidth: '120px' }}>
+                <th className="px-4 py-3 sticky bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 border-r border-blue-300" style={{ left: '240px', width: '130px' }}>
                   OTT
                 </th>
-                <th className="px-4 py-3 sticky bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 border-r-2 border-blue-200" style={{ left: '340px', minWidth: '120px' }}>
+                <th className="px-4 py-3 sticky bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 border-r border-blue-300" style={{ left: '370px', width: '130px' }}>
                   Modelo
                 </th>
-                <th className="px-4 py-3 sticky bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 border-r-4 border-blue-300 shadow-lg" style={{ left: '460px', minWidth: '120px' }}>
+                <th className="px-4 py-3 sticky bg-blue-100 text-left text-xs font-medium text-gray-700 uppercase z-20 border-r-4 border-blue-400 shadow-lg" style={{ left: '500px', width: '150px' }}>
                   Asesor
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -709,21 +717,21 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
 
                 return (
                   <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 sticky left-0 bg-blue-50 z-10 border-r-2 border-blue-200" style={{ minWidth: '100px' }}>
+                    <td className="px-4 py-3 sticky bg-blue-50 z-10 border-r border-blue-300" style={{ left: '0px', width: '110px' }}>
                       <span className="inline-flex px-2 py-1 text-xs font-medium text-gray-900">
                         {prioridadValue}
                       </span>
                     </td>
-                    <td className="px-4 py-3 sticky bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 border-r-2 border-blue-200" style={{ left: '100px', minWidth: '120px' }}>
+                    <td className="px-4 py-3 sticky bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 border-r border-blue-300" style={{ left: '110px', width: '130px' }}>
                       {getFieldValue(item.fields, "Serie")}
                     </td>
-                    <td className="px-4 py-3 sticky bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 border-r-2 border-blue-200" style={{ left: '220px', minWidth: '120px' }}>
+                    <td className="px-4 py-3 sticky bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 border-r border-blue-300" style={{ left: '240px', width: '130px' }}>
                       {getFieldValue(item.fields, "OTT")}
                     </td>
-                    <td className="px-4 py-3 sticky bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 border-r-2 border-blue-200" style={{ left: '340px', minWidth: '120px' }}>
+                    <td className="px-4 py-3 sticky bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 border-r border-blue-300" style={{ left: '370px', width: '130px' }}>
                       {getFieldValue(item.fields, "Modelo")}
                     </td>
-                    <td className="px-4 py-3 sticky bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 border-r-4 border-blue-300 shadow-lg" style={{ left: '460px', minWidth: '120px' }}>
+                    <td className="px-4 py-3 sticky bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 border-r-4 border-blue-400 shadow-lg" style={{ left: '500px', width: '150px' }}>
                       {getFieldValue(item.fields, "Asesor")}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
