@@ -102,24 +102,31 @@ class AuthService {
       throw new Error("No hay cuenta activa. Por favor inicia sesión.");
     }
 
+    console.log("🔑 Solicitando token de SharePoint...");
+    console.log("📋 Scopes requeridos:", sharePointRequest.scopes);
+
     try {
       // Intenta obtener el token silenciosamente para SharePoint
       const response = await this.msalInstance.acquireTokenSilent({
         ...sharePointRequest,
         account: account,
       });
-      console.log("🔑 Token de SharePoint obtenido exitosamente");
+      console.log("✅ Token de SharePoint obtenido silenciosamente");
+      console.log("📋 Token (primeros 20 caracteres):", response.accessToken.substring(0, 20) + "...");
       return response.accessToken;
     } catch (error) {
       // Si falla, solicita interacción del usuario
       if (error instanceof InteractionRequiredAuthError) {
-        console.log("🔄 Solicitando autorización para SharePoint...");
+        console.log("🔄 Token no disponible, solicitando autorización del usuario...");
+        console.log("⚠️ Se abrirá una ventana emergente para autorizar SharePoint");
         const response = await this.msalInstance.acquireTokenPopup(
           sharePointRequest
         );
+        console.log("✅ Token de SharePoint obtenido mediante popup");
         return response.accessToken;
       }
       console.error("❌ Error obteniendo token de SharePoint:", error);
+      console.error("📋 Tipo de error:", error instanceof Error ? error.message : String(error));
       throw error;
     }
   }

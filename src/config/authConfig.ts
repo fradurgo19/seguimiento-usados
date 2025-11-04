@@ -20,15 +20,29 @@ export const msalConfig: Configuration = {
   },
 };
 
-// Scopes necesarios para Microsoft Graph
-export const loginRequest: PopupRequest = {
-  scopes: ["User.Read", "Sites.Read.All", "Sites.ReadWrite.All"],
+// Extrae solo el dominio base de SharePoint (ej: https://tenant.sharepoint.com)
+const getSharePointDomain = (): string => {
+  const siteUrl = import.meta.env.VITE_SHAREPOINT_SITE_URL || "";
+  try {
+    const url = new URL(siteUrl);
+    return `${url.protocol}//${url.hostname}`;
+  } catch {
+    return siteUrl;
+  }
 };
 
-// Scopes necesarios para SharePoint REST API (adjuntos)
+// Scopes necesarios para Microsoft Graph
+export const loginRequest: PopupRequest = {
+  scopes: [
+    "User.Read",
+    "Sites.Read.All", 
+    "Sites.ReadWrite.All"
+  ],
+};
+
 export const sharePointRequest: PopupRequest = {
   scopes: [
-    `${(import.meta.env.VITE_SHAREPOINT_SITE_URL || "").replace(/\/$/, "")}/.default`
+    `${getSharePointDomain()}/.default`
   ],
 };
 

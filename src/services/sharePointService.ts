@@ -290,7 +290,7 @@ class SharePointService {
    */
   async getItemAttachments(itemId: string): Promise<any[]> {
     try {
-      // Obtener token específico para SharePoint
+      // Obtener token específico para SharePoint REST API
       const token = await authService.getSharePointToken();
       const siteUrl = sharePointConfig.siteUrl;
       const listName = sharePointConfig.listName;
@@ -299,6 +299,7 @@ class SharePointService {
       const restUrl = `${siteUrl}/_api/web/lists/getbytitle('${listName}')/items(${itemId})/AttachmentFiles`;
       
       console.log(`📎 Obteniendo adjuntos para item ${itemId}...`);
+      console.log(`🔗 URL: ${restUrl}`);
       
       const response = await axios.get(restUrl, {
         headers: {
@@ -316,6 +317,10 @@ class SharePointService {
         return [];
       }
       console.error("❌ Error obteniendo adjuntos:", error.message);
+      if (error.response) {
+        console.error("📋 Status:", error.response.status);
+        console.error("📋 Data:", error.response.data);
+      }
       return []; // Devolver array vacío en lugar de error
     }
   }
@@ -328,19 +333,38 @@ class SharePointService {
     file: File
   ): Promise<any> {
     try {
+      console.log(`\n━━━━━━━━ INICIANDO SUBIDA DE ARCHIVO ━━━━━━━━`);
+      console.log(`📤 Archivo: ${file.name}`);
+      console.log(`📦 Tamaño: ${(file.size / 1024).toFixed(2)} KB`);
+      console.log(`📍 Item ID: ${itemId}`);
+      console.log(`🕐 Timestamp: ${new Date().toLocaleTimeString()}`);
+
       // Obtener token específico para SharePoint
+      console.log(`\n🔑 Paso 1: Obteniendo token de SharePoint...`);
       const token = await authService.getSharePointToken();
+      console.log(`✅ Token obtenido correctamente`);
+
       const siteUrl = sharePointConfig.siteUrl;
       const listName = sharePointConfig.listName;
 
-      console.log(`📤 Subiendo archivo: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
-      console.log(`📍 Item ID: ${itemId}`);
+      console.log(`\n📋 Paso 2: Configurando request`);
+      console.log(`🌐 Site URL: ${siteUrl}`);
+      console.log(`📄 Lista: ${listName}`);
 
       // Leer el archivo como ArrayBuffer
+      console.log(`\n📖 Paso 3: Leyendo archivo...`);
       const arrayBuffer = await file.arrayBuffer();
+      console.log(`✅ Archivo leído: ${arrayBuffer.byteLength} bytes`);
 
       // Usar SharePoint REST API directamente para subir attachments
       const restUrl = `${siteUrl}/_api/web/lists/getbytitle('${listName}')/items(${itemId})/AttachmentFiles/add(FileName='${encodeURIComponent(file.name)}')`;
+      console.log(`\n🔗 Paso 4: Enviando POST request`);
+      console.log(`📍 URL completa: ${restUrl}`);
+      console.log(`📋 Headers:`, {
+        'Authorization': `Bearer ${token.substring(0, 20)}...`,
+        'Accept': 'application/json;odata=verbose',
+        'Content-Type': 'application/octet-stream',
+      });
 
       const response = await axios.post(restUrl, arrayBuffer, {
         headers: {
@@ -350,14 +374,36 @@ class SharePointService {
         },
       });
 
-      console.log(`✅ Adjunto subido exitosamente: ${file.name}`);
+      console.log(`\n✅ ¡ÉXITO! Archivo subido correctamente`);
+      console.log(`📋 Response status: ${response.status}`);
+      console.log(`📋 Response data:`, response.data);
+      console.log(`━━━━━━━━ FIN SUBIDA EXITOSA ━━━━━━━━\n`);
+      
       return response.data;
     } catch (error: any) {
-      console.error(`❌ Error subiendo adjunto ${file.name}:`, error.message);
+      console.error(`\n❌ ERROR SUBIENDO ARCHIVO`);
+      console.error(`📁 Archivo: ${file.name}`);
+      console.error(`📋 Mensaje: ${error.message}`);
+      
       if (error.response) {
-        console.error("📋 Status:", error.response.status);
-        console.error("📋 Detalles:", error.response.data);
+        console.error(`📋 HTTP Status: ${error.response.status} ${error.response.statusText}`);
+        console.error(`📋 Response Headers:`, error.response.headers);
+        console.error(`📋 Response Data:`, error.response.data);
+        
+        if (error.response.status === 401) {
+          console.error(`\n⚠️ ERROR 401: No autorizado`);
+          console.error(`💡 Posibles causas:`);
+          console.error(`   1. Token inválido o expirado`);
+          console.error(`   2. Permisos insuficientes en SharePoint`);
+          console.error(`   3. Scope del token incorrecto`);
+        }
+      } else if (error.request) {
+        console.error(`📋 Request enviado pero sin respuesta:`, error.request);
+      } else {
+        console.error(`📋 Error configurando request:`, error.message);
       }
+      
+      console.error(`━━━━━━━━ FIN ERROR ━━━━━━━━\n`);
       throw error;
     }
   }
