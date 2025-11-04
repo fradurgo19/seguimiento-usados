@@ -128,7 +128,12 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
     }
   };
 
-  const faseOptions = ["0%", "50%", "100%"];
+  // Observar valores del formulario para mostrar en el header
+  const watchedSerie = useWatch({ control, name: "Serie" });
+  const watchedModelo = useWatch({ control, name: "Modelo" });
+  const watchedAsesor = useWatch({ control, name: "Asesor" });
+
+  const faseOptions = ["0%", "25%", "50%", "75%", "100%"];
 
   // Modelos reales de maquinaria de Partequipos
   const modeloOptions = [
@@ -232,13 +237,38 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full my-8">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900">
-            {isEditing ? "Editar Equipo" : "Agregar Nuevo Equipo"}
-          </h2>
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              {isEditing ? "Editar Equipo" : "Agregar Nuevo Equipo"}
+            </h2>
+            {/* Información del equipo visible en modo edición */}
+            {isEditing && (watchedSerie || watchedModelo || watchedAsesor) && (
+              <div className="flex flex-wrap items-center gap-3 mt-3">
+                {watchedSerie && (
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-blue-800 rounded-lg border border-blue-200">
+                    <span className="text-xs font-semibold uppercase tracking-wide">Serie:</span>
+                    <span className="font-bold">{watchedSerie}</span>
+                  </div>
+                )}
+                {watchedModelo && (
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-100 text-green-800 rounded-lg border border-green-200">
+                    <span className="text-xs font-semibold uppercase tracking-wide">Modelo:</span>
+                    <span className="font-bold">{watchedModelo}</span>
+                  </div>
+                )}
+                {watchedAsesor && (
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-100 text-purple-800 rounded-lg border border-purple-200">
+                    <span className="text-xs font-semibold uppercase tracking-wide">Asesor:</span>
+                    <span className="font-bold">{watchedAsesor}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           <button
             onClick={onCancel}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors ml-4"
           >
             <X className="w-6 h-6" />
           </button>
@@ -536,10 +566,10 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
             ) : (
               /* Pestaña de Fases */
               <div>
-                <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+                <div className="mb-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
                   <p className="text-sm text-blue-800">
-                    <strong>Instrucciones:</strong> Selecciona el porcentaje de cada
-                    fase del alistamiento (0%, 50%, 100%). El % de avance total se calculará
+                    <strong>📋 Instrucciones:</strong> Selecciona el porcentaje de cada
+                    fase del alistamiento (0%, 25%, 50%, 75%, 100%). El % de avance total se calculará
                     automáticamente en SharePoint.
                   </p>
                 </div>
