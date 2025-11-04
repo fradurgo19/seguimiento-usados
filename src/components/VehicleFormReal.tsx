@@ -147,6 +147,26 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
 
   const faseOptions = ["0%", "25%", "50%", "75%", "100%"];
 
+  // Nombres descriptivos de las fases
+  const faseNombres: Record<number, string> = {
+    1: "LAVADO INICIAL",
+    2: "INSPECCION",
+    3: "DESENSAMBLE / ENSAMBLE INICIAL",
+    4: "INSPECCION AJUSTES",
+    5: "DESINSTALACION COMPONENTES MAYORES",
+    6: "SOLDADURA / TORNO",
+    7: "CABINA",
+    8: "RODAJE / CILINDROS",
+    9: "REPARACION COMPONENTES MAYORES",
+    10: "ELECTRICIDAD / MISCELANEOS / CORRECCION FUGAS",
+    11: "INSTALACION COMPONENTES MAYORES",
+    12: "ENSAMBLE FINAL",
+    13: "MANTENIMIENTO PREVENTIVO",
+    14: "LAVADO PARA PINTURA",
+    15: "PINTURA",
+    16: "PREENTREGA",
+  };
+
   // Modelos reales de maquinaria de Partequipos
   const modeloOptions = [
     "ZX75US-3",
@@ -505,12 +525,10 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
                 {/* Fecha de Solicitud */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Fecha de Solicitud <span className="text-red-500">*</span>
+                    Fecha de Solicitud
                   </label>
                   <input
-                    {...register("FechaSolicitud", {
-                      required: "La fecha es obligatoria",
-                    })}
+                    {...register("FechaSolicitud")}
                     type="date"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
@@ -524,13 +542,10 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
                 {/* Fecha de Compromiso Comercial */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Fecha de Compromiso Comercial{" "}
-                    <span className="text-red-500">*</span>
+                    Fecha de Compromiso Comercial
                   </label>
                   <input
-                    {...register("FechaCompromisoComercial", {
-                      required: "La fecha es obligatoria",
-                    })}
+                    {...register("FechaCompromisoComercial")}
                     type="date"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
@@ -652,13 +667,16 @@ const VehicleFormReal: React.FC<VehicleFormProps> = ({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {Array.from({ length: 16 }, (_, i) => i + 1).map((num) => (
-                    <div key={`F${num}`}>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Fase {num} (F{num})
+                    <div key={`F${num}`} className="bg-gray-50 p-3 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                      <label className="block text-sm font-semibold text-gray-800 mb-1">
+                        F{num}
                       </label>
+                      <p className="text-[10px] text-gray-500 mb-2 leading-tight uppercase">
+                        {faseNombres[num]}
+                      </p>
                       <select
                         {...register(`F${num}` as any)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
                       >
                         {faseOptions.map((option) => (
                           <option key={option} value={option}>
