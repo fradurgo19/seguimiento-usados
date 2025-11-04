@@ -5,6 +5,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { SharePointListItem, sharePointService } from "../services/sharePointService";
+import { sharePointConfig } from "../config/authConfig";
 import { Edit2, Trash2, TestTube2, ChevronDown, ChevronUp, Search, X, Paperclip, Download, FileIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -372,8 +373,18 @@ const SharePointTableReal: React.FC<SharePointTableRealProps> = ({
                                 <div className="space-y-1.5">
                                   {attachments[item.id].map((file: any, index: number) => {
                                     // SharePoint REST API devuelve ServerRelativeUrl
+                                    // Extraer el dominio de SharePoint desde siteUrl
+                                    const getSharePointDomain = () => {
+                                      try {
+                                        const url = new URL(sharePointConfig.siteUrl);
+                                        return `${url.protocol}//${url.hostname}`;
+                                      } catch {
+                                        return sharePointConfig.siteUrl.split('/sites/')[0];
+                                      }
+                                    };
+                                    
                                     const fileUrl = file.ServerRelativeUrl 
-                                      ? `${window.location.protocol}//${window.location.hostname}${file.ServerRelativeUrl}`
+                                      ? `${getSharePointDomain()}${file.ServerRelativeUrl}`
                                       : file["@microsoft.graph.downloadUrl"] || file.webUrl;
                                     
                                     return (
