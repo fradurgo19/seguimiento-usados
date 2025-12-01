@@ -12,7 +12,11 @@ import {
 } from "./services/sharePointService";
 import { realItems } from "./data/mockDataReal";
 import { LayoutDashboard, Table2, Plus, Loader2 } from "lucide-react";
-import { normalizeSharePointFields, getFieldValue, denormalizeSharePointFields } from "./utils/sharePointFieldMapping";
+import {
+  normalizeSharePointFields,
+  getFieldValue,
+  denormalizeSharePointFields,
+} from "./utils/sharePointFieldMapping";
 
 type View = "dashboard" | "table";
 
@@ -60,16 +64,29 @@ function AppContent() {
     console.log(`🔍 Filtrando ${items.length} registros con filtros:`, filters);
     const filtered = items.filter((item) => {
       // Filtro por Sede
-      if (filters.sede && getFieldValue(item.fields, "Sede") !== filters.sede) return false;
+      if (filters.sede && getFieldValue(item.fields, "Sede") !== filters.sede)
+        return false;
 
       // Filtro por Asesor
-      if (filters.asesor && getFieldValue(item.fields, "Asesor") !== filters.asesor) return false;
+      if (
+        filters.asesor &&
+        getFieldValue(item.fields, "Asesor") !== filters.asesor
+      )
+        return false;
 
       // Filtro por Cliente
-      if (filters.cliente && getFieldValue(item.fields, "Title") !== filters.cliente) return false;
+      if (
+        filters.cliente &&
+        getFieldValue(item.fields, "Title") !== filters.cliente
+      )
+        return false;
 
       // Filtro por Serie
-      if (filters.serie && getFieldValue(item.fields, "Serie") !== filters.serie) return false;
+      if (
+        filters.serie &&
+        getFieldValue(item.fields, "Serie") !== filters.serie
+      )
+        return false;
 
       // Filtro por Fase
       if (filters.fase) {
@@ -85,16 +102,23 @@ function AppContent() {
         return false;
 
       // Filtro por Ciclo
-      if (filters.ciclo && getFieldValue(item.fields, "Ciclo") !== filters.ciclo) return false;
+      if (
+        filters.ciclo &&
+        getFieldValue(item.fields, "Ciclo") !== filters.ciclo
+      )
+        return false;
 
       // Filtro por Fecha de Compromiso (solo si el campo tiene valor)
       if (filters.fechaCompromisoDesde || filters.fechaCompromisoHasta) {
-        const fechaCompromisoValue = getFieldValue(item.fields, "FechaCompromisoComercial");
+        const fechaCompromisoValue = getFieldValue(
+          item.fields,
+          "FechaCompromisoComercial"
+        );
         // Solo filtrar si el campo tiene un valor válido
         if (fechaCompromisoValue) {
           const fechaCompromiso = new Date(fechaCompromisoValue);
           if (isNaN(fechaCompromiso.getTime())) return true; // Si la fecha es inválida, incluir el registro
-          
+
           if (filters.fechaCompromisoDesde) {
             const desde = new Date(filters.fechaCompromisoDesde);
             if (fechaCompromiso < desde) return false;
@@ -110,12 +134,15 @@ function AppContent() {
 
       // Filtro por Fecha Final Alistamiento (solo si el campo tiene valor)
       if (filters.fechaFinalDesde || filters.fechaFinalHasta) {
-        const fechaFinalValue = getFieldValue(item.fields, "FechaFinalAlistamiento");
+        const fechaFinalValue = getFieldValue(
+          item.fields,
+          "FechaFinalAlistamiento"
+        );
         // Solo filtrar si el campo tiene un valor válido
         if (fechaFinalValue) {
           const fechaFinal = new Date(fechaFinalValue);
           if (isNaN(fechaFinal.getTime())) return true; // Si la fecha es inválida, incluir el registro
-          
+
           if (filters.fechaFinalDesde) {
             const desde = new Date(filters.fechaFinalDesde);
             if (fechaFinal < desde) return false;
@@ -134,19 +161,25 @@ function AppContent() {
         // Helper para obtener porcentaje de avance
         const getPorcentajeAvance = (fields: Record<string, any>): number => {
           let porcentaje = getFieldValue(fields, "PorcentajeAvanceTotal");
-          
-          if (typeof porcentaje === 'string') {
-            porcentaje = parseFloat(porcentaje.replace('%', '').replace(/[^0-9.]/g, '')) || 0;
+
+          if (typeof porcentaje === "string") {
+            porcentaje =
+              parseFloat(porcentaje.replace("%", "").replace(/[^0-9.]/g, "")) ||
+              0;
           } else {
             porcentaje = Number(porcentaje) || 0;
           }
-          
+
           return porcentaje;
         };
 
         const avance = getPorcentajeAvance(item.fields);
         if (filters.porcentajeAvance === "100" && avance !== 100) return false;
-        if (filters.porcentajeAvance === ">0" && (avance === 0 || avance === 100)) return false;
+        if (
+          filters.porcentajeAvance === ">0" &&
+          (avance === 0 || avance === 100)
+        )
+          return false;
         if (filters.porcentajeAvance === "0" && avance !== 0) return false;
       }
 
@@ -160,22 +193,27 @@ function AppContent() {
     try {
       setIsLoading(true);
       const itemsData = await sharePointService.getListItems();
-      
+
       console.log(`📊 Registros recibidos de SharePoint: ${itemsData.length}`);
-      
+
       // Normalizar los campos de SharePoint para usar nombres amigables
       const normalizedItems = itemsData.map((item) => ({
         ...item,
         fields: normalizeSharePointFields(item.fields),
       }));
-      
-      console.log(`✅ Registros normalizados y listos para mostrar: ${normalizedItems.length}`);
-      console.log(`📋 Primeros 5 registros normalizados:`, normalizedItems.slice(0, 5).map(i => ({ 
-        id: i.id, 
-        title: i.fields.Title,
-        serie: getFieldValue(i.fields, "Serie")
-      })));
-      
+
+      console.log(
+        `✅ Registros normalizados y listos para mostrar: ${normalizedItems.length}`
+      );
+      console.log(
+        `📋 Primeros 5 registros normalizados:`,
+        normalizedItems.slice(0, 5).map((i) => ({
+          id: i.id,
+          title: i.fields.Title,
+          serie: getFieldValue(i.fields, "Serie"),
+        }))
+      );
+
       setItems(normalizedItems);
       setUseMockData(false);
     } catch (error) {
@@ -228,16 +266,24 @@ function AppContent() {
 
         // Fechas (convertir a formato ISO)
         if (data.FechaSolicitud) {
-          sharePointFields.field_7 = new Date(data.FechaSolicitud + "T00:00:00Z").toISOString();
+          sharePointFields.field_7 = new Date(
+            data.FechaSolicitud + "T00:00:00Z"
+          ).toISOString();
         }
         if (data.FechaCompromisoComercial) {
-          sharePointFields.field_9 = new Date(data.FechaCompromisoComercial + "T00:00:00Z").toISOString();
+          sharePointFields.field_9 = new Date(
+            data.FechaCompromisoComercial + "T00:00:00Z"
+          ).toISOString();
         }
         if (data.FechaInicioCiclo) {
-          sharePointFields.field_10 = new Date(data.FechaInicioCiclo + "T00:00:00Z").toISOString(); // FechaInicioCiclo
+          sharePointFields.field_10 = new Date(
+            data.FechaInicioCiclo + "T00:00:00Z"
+          ).toISOString(); // FechaInicioCiclo
         }
         if (data.FechaFinalAlistamiento) {
-          sharePointFields.FechaFinalAlistamiento = new Date(data.FechaFinalAlistamiento + "T00:00:00Z").toISOString();
+          sharePointFields.FechaFinalAlistamiento = new Date(
+            data.FechaFinalAlistamiento + "T00:00:00Z"
+          ).toISOString();
         }
 
         // Campos opcionales
@@ -256,18 +302,20 @@ function AppContent() {
           }
         }
 
-        const newItem = await sharePointService.createListItem(sharePointFields);
+        const newItem = await sharePointService.createListItem(
+          sharePointFields
+        );
         console.log(`✅ Equipo creado con ID: ${newItem.id}`);
-        
+
         // Subir archivos adjuntos si existen
         let uploadedCount = 0;
         let failedCount = 0;
         if (files && files.length > 0) {
           console.log(`📎 Iniciando subida de ${files.length} archivo(s)...`);
-          
+
           // Esperar un momento para que SharePoint procese el item
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+
           for (const file of files) {
             try {
               console.log(`⬆️ Subiendo: ${file.name}...`);
@@ -279,23 +327,32 @@ function AppContent() {
               failedCount++;
             }
           }
-          
-          console.log(`📊 Resultado: ${uploadedCount} exitosos, ${failedCount} fallidos`);
+
+          console.log(
+            `📊 Resultado: ${uploadedCount} exitosos, ${failedCount} fallidos`
+          );
         }
 
         await loadRealData();
         setShowForm(false);
-        
-        const message = files && files.length > 0
-          ? `Equipo agregado exitosamente. Archivos: ${uploadedCount} subidos` + (failedCount > 0 ? `, ${failedCount} fallidos` : "")
-          : "Equipo agregado exitosamente";
-        
+
+        const message =
+          files && files.length > 0
+            ? `Equipo agregado exitosamente. Archivos: ${uploadedCount} subidos` +
+              (failedCount > 0 ? `, ${failedCount} fallidos` : "")
+            : "Equipo agregado exitosamente";
+
         alert(message);
       } catch (error: any) {
         console.error("Error adding vehicle:", error);
-        const errorMessage = error.response?.data?.error?.message || error.message || "Error desconocido";
+        const errorMessage =
+          error.response?.data?.error?.message ||
+          error.message ||
+          "Error desconocido";
         console.error("Error completo:", error.response?.data);
-        alert(`Error al agregar equipo: ${errorMessage}. Revisa la consola para más detalles.`);
+        alert(
+          `Error al agregar equipo: ${errorMessage}. Revisa la consola para más detalles.`
+        );
       }
     }
   };
@@ -346,16 +403,24 @@ function AppContent() {
 
         // Fechas (convertir a formato ISO)
         if (data.FechaSolicitud) {
-          sharePointFields.field_7 = new Date(data.FechaSolicitud + "T00:00:00Z").toISOString();
+          sharePointFields.field_7 = new Date(
+            data.FechaSolicitud + "T00:00:00Z"
+          ).toISOString();
         }
         if (data.FechaCompromisoComercial) {
-          sharePointFields.field_9 = new Date(data.FechaCompromisoComercial + "T00:00:00Z").toISOString();
+          sharePointFields.field_9 = new Date(
+            data.FechaCompromisoComercial + "T00:00:00Z"
+          ).toISOString();
         }
         if (data.FechaInicioCiclo) {
-          sharePointFields.field_10 = new Date(data.FechaInicioCiclo + "T00:00:00Z").toISOString(); // FechaInicioCiclo
+          sharePointFields.field_10 = new Date(
+            data.FechaInicioCiclo + "T00:00:00Z"
+          ).toISOString(); // FechaInicioCiclo
         }
         if (data.FechaFinalAlistamiento) {
-          sharePointFields.FechaFinalAlistamiento = new Date(data.FechaFinalAlistamiento + "T00:00:00Z").toISOString();
+          sharePointFields.FechaFinalAlistamiento = new Date(
+            data.FechaFinalAlistamiento + "T00:00:00Z"
+          ).toISOString();
         }
 
         // Campos opcionales
@@ -374,27 +439,32 @@ function AppContent() {
           }
         }
 
-        console.log(`📤 Enviando actualización para item ID: ${editingVehicle.id}`);
+        console.log(
+          `📤 Enviando actualización para item ID: ${editingVehicle.id}`
+        );
         console.log(`📋 Item completo:`, editingVehicle);
         console.log(`📋 Datos a enviar:`, sharePointFields);
-        
+
         // Validar que el ID existe y es válido
-        if (!editingVehicle.id || editingVehicle.id.trim() === '') {
-          throw new Error('El ID del item no es válido');
+        if (!editingVehicle.id || editingVehicle.id.trim() === "") {
+          throw new Error("El ID del item no es válido");
         }
-        
-        await sharePointService.updateListItem(editingVehicle.id, sharePointFields);
+
+        await sharePointService.updateListItem(
+          editingVehicle.id,
+          sharePointFields
+        );
         console.log(`✅ Equipo actualizado con ID: ${editingVehicle.id}`);
-        
+
         // Subir archivos adjuntos si existen
         let uploadedCount = 0;
         let failedCount = 0;
         if (files && files.length > 0) {
           console.log(`📎 Iniciando subida de ${files.length} archivo(s)...`);
-          
+
           // Esperar un momento para que SharePoint procese la actualización
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
+          await new Promise((resolve) => setTimeout(resolve, 500));
+
           for (const file of files) {
             try {
               console.log(`⬆️ Subiendo: ${file.name}...`);
@@ -406,23 +476,32 @@ function AppContent() {
               failedCount++;
             }
           }
-          
-          console.log(`📊 Resultado: ${uploadedCount} exitosos, ${failedCount} fallidos`);
+
+          console.log(
+            `📊 Resultado: ${uploadedCount} exitosos, ${failedCount} fallidos`
+          );
         }
 
         await loadRealData();
         setEditingVehicle(null);
-        
-        const message = files && files.length > 0
-          ? `Equipo actualizado exitosamente. Archivos: ${uploadedCount} subidos` + (failedCount > 0 ? `, ${failedCount} fallidos` : "")
-          : "Equipo actualizado exitosamente";
-        
+
+        const message =
+          files && files.length > 0
+            ? `Equipo actualizado exitosamente. Archivos: ${uploadedCount} subidos` +
+              (failedCount > 0 ? `, ${failedCount} fallidos` : "")
+            : "Equipo actualizado exitosamente";
+
         alert(message);
       } catch (error: any) {
         console.error("Error updating vehicle:", error);
-        const errorMessage = error.response?.data?.error?.message || error.message || "Error desconocido";
+        const errorMessage =
+          error.response?.data?.error?.message ||
+          error.message ||
+          "Error desconocido";
         console.error("Error completo:", error.response?.data);
-        alert(`Error al actualizar equipo: ${errorMessage}. Revisa la consola para más detalles.`);
+        alert(
+          `Error al actualizar equipo: ${errorMessage}. Revisa la consola para más detalles.`
+        );
       }
     }
   };
@@ -458,9 +537,9 @@ function AppContent() {
             <div className="flex-1"></div>
             {/* Logo centrado */}
             <div className="flex-1 flex justify-center">
-              <img 
-                src="https://res.cloudinary.com/dbufrzoda/image/upload/v1750457354/Captura_de_pantalla_2025-06-20_170819_wzmyli.png" 
-                alt="Logo Partequipos" 
+              <img
+                src="https://res.cloudinary.com/dbufrzoda/image/upload/v1750457354/Captura_de_pantalla_2025-06-20_170819_wzmyli.png"
+                alt="Logo Partequipos"
                 className="h-16 object-contain"
               />
             </div>
@@ -512,7 +591,7 @@ function AppContent() {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center p-12">
             <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
@@ -521,11 +600,13 @@ function AppContent() {
         ) : (
           <>
             {currentView === "dashboard" && (
-              <DashboardFilters
-                items={items}
-                filters={filters}
-                onFilterChange={setFilters}
-              />
+              <div className="w-full mb-6">
+                <DashboardFilters
+                  items={items}
+                  filters={filters}
+                  onFilterChange={setFilters}
+                />
+              </div>
             )}
             {currentView === "dashboard" ? (
               <DashboardReal items={filteredItems} />

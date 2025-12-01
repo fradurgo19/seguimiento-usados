@@ -33,13 +33,14 @@ export interface FilterState {
 // Helper para obtener porcentaje de avance
 const getPorcentajeAvance = (fields: Record<string, any>): number => {
   let porcentaje = getFieldValue(fields, "PorcentajeAvanceTotal");
-  
-  if (typeof porcentaje === 'string') {
-    porcentaje = parseFloat(porcentaje.replace('%', '').replace(/[^0-9.]/g, '')) || 0;
+
+  if (typeof porcentaje === "string") {
+    porcentaje =
+      parseFloat(porcentaje.replace("%", "").replace(/[^0-9.]/g, "")) || 0;
   } else {
     porcentaje = Number(porcentaje) || 0;
   }
-  
+
   return porcentaje;
 };
 
@@ -51,39 +52,69 @@ const applyFiltersExcept = (
 ): SharePointListItem[] => {
   return items.filter((item) => {
     // Sede
-    if (excludeField !== "sede" && filters.sede && getFieldValue(item.fields, "Sede") !== filters.sede) {
+    if (
+      excludeField !== "sede" &&
+      filters.sede &&
+      getFieldValue(item.fields, "Sede") !== filters.sede
+    ) {
       return false;
     }
 
     // Asesor
-    if (excludeField !== "asesor" && filters.asesor && getFieldValue(item.fields, "Asesor") !== filters.asesor) {
+    if (
+      excludeField !== "asesor" &&
+      filters.asesor &&
+      getFieldValue(item.fields, "Asesor") !== filters.asesor
+    ) {
       return false;
     }
 
     // Cliente
-    if (excludeField !== "cliente" && filters.cliente && getFieldValue(item.fields, "Title") !== filters.cliente) {
+    if (
+      excludeField !== "cliente" &&
+      filters.cliente &&
+      getFieldValue(item.fields, "Title") !== filters.cliente
+    ) {
       return false;
     }
 
     // Serie
-    if (excludeField !== "serie" && filters.serie && getFieldValue(item.fields, "Serie") !== filters.serie) {
+    if (
+      excludeField !== "serie" &&
+      filters.serie &&
+      getFieldValue(item.fields, "Serie") !== filters.serie
+    ) {
       return false;
     }
 
     // Observaciones
-    if (excludeField !== "observaciones" && filters.observaciones && getFieldValue(item.fields, "Observaciones") !== filters.observaciones) {
+    if (
+      excludeField !== "observaciones" &&
+      filters.observaciones &&
+      getFieldValue(item.fields, "Observaciones") !== filters.observaciones
+    ) {
       return false;
     }
 
     // Ciclo
-    if (excludeField !== "ciclo" && filters.ciclo && getFieldValue(item.fields, "Ciclo") !== filters.ciclo) {
+    if (
+      excludeField !== "ciclo" &&
+      filters.ciclo &&
+      getFieldValue(item.fields, "Ciclo") !== filters.ciclo
+    ) {
       return false;
     }
 
     // Fecha Compromiso
-    if (excludeField !== "fechaCompromisoDesde" && excludeField !== "fechaCompromisoHasta") {
+    if (
+      excludeField !== "fechaCompromisoDesde" &&
+      excludeField !== "fechaCompromisoHasta"
+    ) {
       if (filters.fechaCompromisoDesde || filters.fechaCompromisoHasta) {
-        const fechaCompromisoValue = getFieldValue(item.fields, "FechaCompromisoComercial");
+        const fechaCompromisoValue = getFieldValue(
+          item.fields,
+          "FechaCompromisoComercial"
+        );
         if (fechaCompromisoValue) {
           const fechaCompromiso = new Date(fechaCompromisoValue);
           if (!isNaN(fechaCompromiso.getTime())) {
@@ -102,9 +133,15 @@ const applyFiltersExcept = (
     }
 
     // Fecha Final Alistamiento
-    if (excludeField !== "fechaFinalDesde" && excludeField !== "fechaFinalHasta") {
+    if (
+      excludeField !== "fechaFinalDesde" &&
+      excludeField !== "fechaFinalHasta"
+    ) {
       if (filters.fechaFinalDesde || filters.fechaFinalHasta) {
-        const fechaFinalValue = getFieldValue(item.fields, "FechaFinalAlistamiento");
+        const fechaFinalValue = getFieldValue(
+          item.fields,
+          "FechaFinalAlistamiento"
+        );
         if (fechaFinalValue) {
           const fechaFinal = new Date(fechaFinalValue);
           if (!isNaN(fechaFinal.getTime())) {
@@ -126,7 +163,8 @@ const applyFiltersExcept = (
     if (excludeField !== "porcentajeAvance" && filters.porcentajeAvance) {
       const avance = getPorcentajeAvance(item.fields);
       if (filters.porcentajeAvance === "100" && avance !== 100) return false;
-      if (filters.porcentajeAvance === ">0" && (avance === 0 || avance === 100)) return false;
+      if (filters.porcentajeAvance === ">0" && (avance === 0 || avance === 100))
+        return false;
       if (filters.porcentajeAvance === "0" && avance !== 0) return false;
     }
 
@@ -144,52 +182,84 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
   // Sede - no depende de otros filtros categóricos
   const sedes = useMemo(() => {
     const filtered = applyFiltersExcept(items, filters, "sede");
-    return [...new Set(filtered.map((i) => {
-      const sede = i.fields.field_28 || i.fields.Sede;
-      return sede;
-    }).filter(Boolean))].sort();
+    return [
+      ...new Set(
+        filtered
+          .map((i) => {
+            const sede = i.fields.field_28 || i.fields.Sede;
+            return sede;
+          })
+          .filter(Boolean)
+      ),
+    ].sort();
   }, [items, filters]);
 
   // Asesor - depende de sede, ciclo, observaciones, porcentajeAvance, fechas
   const asesores = useMemo(() => {
     const filtered = applyFiltersExcept(items, filters, "asesor");
-    return [...new Set(filtered.map((i) => {
-      const asesor = i.fields.field_4 || i.fields.Asesor;
-      return asesor;
-    }).filter(Boolean))].sort();
+    return [
+      ...new Set(
+        filtered
+          .map((i) => {
+            const asesor = i.fields.field_4 || i.fields.Asesor;
+            return asesor;
+          })
+          .filter(Boolean)
+      ),
+    ].sort();
   }, [items, filters]);
 
   // Cliente - depende de todos los demás filtros
   const clientes = useMemo(() => {
     const filtered = applyFiltersExcept(items, filters, "cliente");
-    return [...new Set(filtered.map((i) => i.fields.Title).filter(Boolean))].sort();
+    return [
+      ...new Set(filtered.map((i) => i.fields.Title).filter(Boolean)),
+    ].sort();
   }, [items, filters]);
 
   // Serie - depende de todos los demás filtros
   const series = useMemo(() => {
     const filtered = applyFiltersExcept(items, filters, "serie");
-    return [...new Set(filtered.map((i) => {
-      const serie = i.fields.field_0 || i.fields.Serie;
-      return serie;
-    }).filter(Boolean))].sort();
+    return [
+      ...new Set(
+        filtered
+          .map((i) => {
+            const serie = i.fields.field_0 || i.fields.Serie;
+            return serie;
+          })
+          .filter(Boolean)
+      ),
+    ].sort();
   }, [items, filters]);
 
   // Observaciones - depende de otros filtros
   const observaciones = useMemo(() => {
     const filtered = applyFiltersExcept(items, filters, "observaciones");
-    return [...new Set(filtered.map((i) => {
-      const obs = i.fields.field_8 || i.fields.Observaciones;
-      return obs;
-    }).filter(Boolean))].sort();
+    return [
+      ...new Set(
+        filtered
+          .map((i) => {
+            const obs = i.fields.field_8 || i.fields.Observaciones;
+            return obs;
+          })
+          .filter(Boolean)
+      ),
+    ].sort();
   }, [items, filters]);
 
   // Ciclo - depende de otros filtros
   const ciclos = useMemo(() => {
     const filtered = applyFiltersExcept(items, filters, "ciclo");
-    return [...new Set(filtered.map((i) => {
-      const ciclo = i.fields.field_29 || i.fields.Ciclo;
-      return ciclo;
-    }).filter(Boolean))].sort();
+    return [
+      ...new Set(
+        filtered
+          .map((i) => {
+            const ciclo = i.fields.field_29 || i.fields.Ciclo;
+            return ciclo;
+          })
+          .filter(Boolean)
+      ),
+    ].sort();
   }, [items, filters]);
 
   const handleChange = (field: keyof FilterState, value: string) => {
@@ -219,7 +289,7 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
   const hasActiveFilters = Object.values(filters).some((v) => v !== "");
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 mb-6">
+    <div className="bg-white rounded-lg shadow p-6 mb-6 w-full">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Filter className="w-5 h-5 text-blue-600" />
@@ -241,7 +311,7 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 w-full">
         {/* Sede */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -400,7 +470,9 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           <input
             type="date"
             value={filters.fechaCompromisoDesde}
-            onChange={(e) => handleChange("fechaCompromisoDesde", e.target.value)}
+            onChange={(e) =>
+              handleChange("fechaCompromisoDesde", e.target.value)
+            }
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -413,7 +485,9 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           <input
             type="date"
             value={filters.fechaCompromisoHasta}
-            onChange={(e) => handleChange("fechaCompromisoHasta", e.target.value)}
+            onChange={(e) =>
+              handleChange("fechaCompromisoHasta", e.target.value)
+            }
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
