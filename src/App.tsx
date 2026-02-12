@@ -11,7 +11,7 @@ import {
   SharePointListItem,
 } from "./services/sharePointService";
 import { realItems } from "./data/mockDataReal";
-import { LayoutDashboard, Table2, Plus, Loader2 } from "lucide-react";
+import { LayoutDashboard, Table2, Plus, Loader2, Calendar } from "lucide-react";
 import {
   normalizeSharePointFields,
   getFieldValue,
@@ -534,7 +534,17 @@ function AppContent() {
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex-1"></div>
+            <div className="flex-1 flex justify-start">
+              <a
+                href="https://calendarioservicios.vercel.app/login"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200"
+              >
+                <Calendar className="w-5 h-5 text-blue-600" />
+                Calendario Servicio
+              </a>
+            </div>
             {/* Logo centrado */}
             <div className="flex-1 flex justify-center">
               <img
