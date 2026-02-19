@@ -7,7 +7,10 @@
 import React, { useMemo } from "react";
 import { Filter, X } from "lucide-react";
 import { SharePointListItem } from "../services/sharePointService";
-import { getFieldValue } from "../utils/sharePointFieldMapping";
+import {
+  getFieldValue,
+  toDateOnlyString,
+} from "../utils/sharePointFieldMapping";
 
 interface DashboardFiltersProps {
   items: SharePointListItem[];
@@ -31,146 +34,166 @@ export interface FilterState {
 }
 
 // Helper para obtener porcentaje de avance
-const getPorcentajeAvance = (fields: Record<string, any>): number => {
-  let porcentaje = getFieldValue(fields, "PorcentajeAvanceTotal");
-
-  if (typeof porcentaje === "string") {
-    porcentaje =
-      parseFloat(porcentaje.replace("%", "").replace(/[^0-9.]/g, "")) || 0;
-  } else {
-    porcentaje = Number(porcentaje) || 0;
+const getPorcentajeAvance = (fields: Record<string, unknown>): number => {
+  const raw = getFieldValue(fields, "PorcentajeAvanceTotal");
+  if (typeof raw === "string") {
+    const cleaned = raw.replaceAll("%", "").replaceAll(/[^0-9.]/g, "");
+    return Number.parseFloat(cleaned) || 0;
   }
-
-  return porcentaje;
+  return Number(raw) || 0;
 };
 
-// Helper para aplicar filtros (excepto el campo excluido)
+const sortStrings = (a: string, b: string): number => a.localeCompare(b);
+
+// Predicados por filtro (reducen complejidad cognitiva del filter principal)
+function matchesSede(
+  item: SharePointListItem,
+  filters: FilterState,
+  excludeField: keyof FilterState
+): boolean {
+  if (excludeField === "sede" || !filters.sede) return true;
+  return getFieldValue(item.fields, "Sede") === filters.sede;
+}
+
+function matchesAsesor(
+  item: SharePointListItem,
+  filters: FilterState,
+  excludeField: keyof FilterState
+): boolean {
+  if (excludeField === "asesor" || !filters.asesor) return true;
+  return getFieldValue(item.fields, "Asesor") === filters.asesor;
+}
+
+function matchesCliente(
+  item: SharePointListItem,
+  filters: FilterState,
+  excludeField: keyof FilterState
+): boolean {
+  if (excludeField === "cliente" || !filters.cliente) return true;
+  return getFieldValue(item.fields, "Title") === filters.cliente;
+}
+
+function matchesSerie(
+  item: SharePointListItem,
+  filters: FilterState,
+  excludeField: keyof FilterState
+): boolean {
+  if (excludeField === "serie" || !filters.serie) return true;
+  return getFieldValue(item.fields, "Serie") === filters.serie;
+}
+
+function matchesObservaciones(
+  item: SharePointListItem,
+  filters: FilterState,
+  excludeField: keyof FilterState
+): boolean {
+  if (excludeField === "observaciones" || !filters.observaciones) return true;
+  return getFieldValue(item.fields, "Observaciones") === filters.observaciones;
+}
+
+function matchesCiclo(
+  item: SharePointListItem,
+  filters: FilterState,
+  excludeField: keyof FilterState
+): boolean {
+  if (excludeField === "ciclo" || !filters.ciclo) return true;
+  return getFieldValue(item.fields, "Ciclo") === filters.ciclo;
+}
+
+function matchesFechaCompromiso(
+  item: SharePointListItem,
+  filters: FilterState,
+  excludeField: keyof FilterState
+): boolean {
+  const skip =
+    excludeField === "fechaCompromisoDesde" ||
+    excludeField === "fechaCompromisoHasta";
+  if (skip || (!filters.fechaCompromisoDesde && !filters.fechaCompromisoHasta))
+    return true;
+  const value = getFieldValue(item.fields, "FechaCompromisoComercial");
+  if (!value) return false;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  const itemStr = toDateOnlyString(date);
+  if (
+    filters.fechaCompromisoDesde &&
+    itemStr < toDateOnlyString(new Date(filters.fechaCompromisoDesde))
+  )
+    return false;
+  if (
+    filters.fechaCompromisoHasta &&
+    itemStr > toDateOnlyString(new Date(filters.fechaCompromisoHasta))
+  )
+    return false;
+  return true;
+}
+
+function matchesFechaFinalAlistamiento(
+  item: SharePointListItem,
+  filters: FilterState,
+  excludeField: keyof FilterState
+): boolean {
+  const skip =
+    excludeField === "fechaFinalDesde" || excludeField === "fechaFinalHasta";
+  if (skip || (!filters.fechaFinalDesde && !filters.fechaFinalHasta))
+    return true;
+  const value = getFieldValue(item.fields, "FechaFinalAlistamiento");
+  if (!value) return false;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  const itemStr = toDateOnlyString(date);
+  if (
+    filters.fechaFinalDesde &&
+    itemStr < toDateOnlyString(new Date(filters.fechaFinalDesde))
+  )
+    return false;
+  if (
+    filters.fechaFinalHasta &&
+    itemStr > toDateOnlyString(new Date(filters.fechaFinalHasta))
+  )
+    return false;
+  return true;
+}
+
+function matchesPorcentajeAvance(
+  item: SharePointListItem,
+  filters: FilterState,
+  excludeField: keyof FilterState
+): boolean {
+  if (excludeField === "porcentajeAvance" || !filters.porcentajeAvance)
+    return true;
+  const avance = getPorcentajeAvance(item.fields as Record<string, unknown>);
+  if (filters.porcentajeAvance === "100" && avance !== 100) return false;
+  if (filters.porcentajeAvance === ">0" && (avance === 0 || avance === 100))
+    return false;
+  if (filters.porcentajeAvance === "0" && avance !== 0) return false;
+  return true;
+}
+
+function itemMatchesAllFilters(
+  item: SharePointListItem,
+  filters: FilterState,
+  excludeField: keyof FilterState
+): boolean {
+  return (
+    matchesSede(item, filters, excludeField) &&
+    matchesAsesor(item, filters, excludeField) &&
+    matchesCliente(item, filters, excludeField) &&
+    matchesSerie(item, filters, excludeField) &&
+    matchesObservaciones(item, filters, excludeField) &&
+    matchesCiclo(item, filters, excludeField) &&
+    matchesFechaCompromiso(item, filters, excludeField) &&
+    matchesFechaFinalAlistamiento(item, filters, excludeField) &&
+    matchesPorcentajeAvance(item, filters, excludeField)
+  );
+}
+
 const applyFiltersExcept = (
   items: SharePointListItem[],
   filters: FilterState,
   excludeField: keyof FilterState
-): SharePointListItem[] => {
-  return items.filter((item) => {
-    // Sede
-    if (
-      excludeField !== "sede" &&
-      filters.sede &&
-      getFieldValue(item.fields, "Sede") !== filters.sede
-    ) {
-      return false;
-    }
-
-    // Asesor
-    if (
-      excludeField !== "asesor" &&
-      filters.asesor &&
-      getFieldValue(item.fields, "Asesor") !== filters.asesor
-    ) {
-      return false;
-    }
-
-    // Cliente
-    if (
-      excludeField !== "cliente" &&
-      filters.cliente &&
-      getFieldValue(item.fields, "Title") !== filters.cliente
-    ) {
-      return false;
-    }
-
-    // Serie
-    if (
-      excludeField !== "serie" &&
-      filters.serie &&
-      getFieldValue(item.fields, "Serie") !== filters.serie
-    ) {
-      return false;
-    }
-
-    // Observaciones
-    if (
-      excludeField !== "observaciones" &&
-      filters.observaciones &&
-      getFieldValue(item.fields, "Observaciones") !== filters.observaciones
-    ) {
-      return false;
-    }
-
-    // Ciclo
-    if (
-      excludeField !== "ciclo" &&
-      filters.ciclo &&
-      getFieldValue(item.fields, "Ciclo") !== filters.ciclo
-    ) {
-      return false;
-    }
-
-    // Fecha Compromiso
-    if (
-      excludeField !== "fechaCompromisoDesde" &&
-      excludeField !== "fechaCompromisoHasta"
-    ) {
-      if (filters.fechaCompromisoDesde || filters.fechaCompromisoHasta) {
-        const fechaCompromisoValue = getFieldValue(
-          item.fields,
-          "FechaCompromisoComercial"
-        );
-        if (fechaCompromisoValue) {
-          const fechaCompromiso = new Date(fechaCompromisoValue);
-          if (!isNaN(fechaCompromiso.getTime())) {
-            if (filters.fechaCompromisoDesde) {
-              const desde = new Date(filters.fechaCompromisoDesde);
-              if (fechaCompromiso < desde) return false;
-            }
-            if (filters.fechaCompromisoHasta) {
-              const hasta = new Date(filters.fechaCompromisoHasta);
-              hasta.setHours(23, 59, 59, 999);
-              if (fechaCompromiso > hasta) return false;
-            }
-          }
-        }
-      }
-    }
-
-    // Fecha Final Alistamiento
-    if (
-      excludeField !== "fechaFinalDesde" &&
-      excludeField !== "fechaFinalHasta"
-    ) {
-      if (filters.fechaFinalDesde || filters.fechaFinalHasta) {
-        const fechaFinalValue = getFieldValue(
-          item.fields,
-          "FechaFinalAlistamiento"
-        );
-        if (fechaFinalValue) {
-          const fechaFinal = new Date(fechaFinalValue);
-          if (!isNaN(fechaFinal.getTime())) {
-            if (filters.fechaFinalDesde) {
-              const desde = new Date(filters.fechaFinalDesde);
-              if (fechaFinal < desde) return false;
-            }
-            if (filters.fechaFinalHasta) {
-              const hasta = new Date(filters.fechaFinalHasta);
-              hasta.setHours(23, 59, 59, 999);
-              if (fechaFinal > hasta) return false;
-            }
-          }
-        }
-      }
-    }
-
-    // Porcentaje Avance
-    if (excludeField !== "porcentajeAvance" && filters.porcentajeAvance) {
-      const avance = getPorcentajeAvance(item.fields);
-      if (filters.porcentajeAvance === "100" && avance !== 100) return false;
-      if (filters.porcentajeAvance === ">0" && (avance === 0 || avance === 100))
-        return false;
-      if (filters.porcentajeAvance === "0" && avance !== 0) return false;
-    }
-
-    return true;
-  });
-};
+): SharePointListItem[] =>
+  items.filter((item) => itemMatchesAllFilters(item, filters, excludeField));
 
 const DashboardFilters: React.FC<DashboardFiltersProps> = ({
   items,
@@ -182,7 +205,7 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
   // Sede - no depende de otros filtros categóricos
   const sedes = useMemo(() => {
     const filtered = applyFiltersExcept(items, filters, "sede");
-    return [
+    const values = [
       ...new Set(
         filtered
           .map((i) => {
@@ -191,13 +214,14 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           })
           .filter(Boolean)
       ),
-    ].sort();
+    ];
+    return values.map(String).sort(sortStrings);
   }, [items, filters]);
 
   // Asesor - depende de sede, ciclo, observaciones, porcentajeAvance, fechas
   const asesores = useMemo(() => {
     const filtered = applyFiltersExcept(items, filters, "asesor");
-    return [
+    const values = [
       ...new Set(
         filtered
           .map((i) => {
@@ -206,21 +230,23 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           })
           .filter(Boolean)
       ),
-    ].sort();
+    ];
+    return values.map(String).sort(sortStrings);
   }, [items, filters]);
 
   // Cliente - depende de todos los demás filtros
   const clientes = useMemo(() => {
     const filtered = applyFiltersExcept(items, filters, "cliente");
-    return [
+    const values = [
       ...new Set(filtered.map((i) => i.fields.Title).filter(Boolean)),
-    ].sort();
+    ];
+    return values.map(String).sort(sortStrings);
   }, [items, filters]);
 
   // Serie - depende de todos los demás filtros
   const series = useMemo(() => {
     const filtered = applyFiltersExcept(items, filters, "serie");
-    return [
+    const values = [
       ...new Set(
         filtered
           .map((i) => {
@@ -229,13 +255,14 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           })
           .filter(Boolean)
       ),
-    ].sort();
+    ];
+    return values.map(String).sort(sortStrings);
   }, [items, filters]);
 
   // Observaciones - depende de otros filtros
   const observaciones = useMemo(() => {
     const filtered = applyFiltersExcept(items, filters, "observaciones");
-    return [
+    const values = [
       ...new Set(
         filtered
           .map((i) => {
@@ -244,13 +271,14 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           })
           .filter(Boolean)
       ),
-    ].sort();
+    ];
+    return values.map(String).sort(sortStrings);
   }, [items, filters]);
 
   // Ciclo - depende de otros filtros
   const ciclos = useMemo(() => {
     const filtered = applyFiltersExcept(items, filters, "ciclo");
-    return [
+    const values = [
       ...new Set(
         filtered
           .map((i) => {
@@ -259,7 +287,8 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           })
           .filter(Boolean)
       ),
-    ].sort();
+    ];
+    return values.map(String).sort(sortStrings);
   }, [items, filters]);
 
   const handleChange = (field: keyof FilterState, value: string) => {
@@ -314,10 +343,14 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 w-full">
         {/* Sede */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="filter-sede"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Sede
           </label>
           <select
+            id="filter-sede"
             value={filters.sede}
             onChange={(e) => handleChange("sede", e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -333,10 +366,14 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
 
         {/* Asesor */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="filter-asesor"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Asesor
           </label>
           <select
+            id="filter-asesor"
             value={filters.asesor}
             onChange={(e) => handleChange("asesor", e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -352,10 +389,14 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
 
         {/* Cliente */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="filter-cliente"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Cliente
           </label>
           <select
+            id="filter-cliente"
             value={filters.cliente}
             onChange={(e) => handleChange("cliente", e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -371,10 +412,14 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
 
         {/* Serie */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="filter-serie"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Serie
           </label>
           <select
+            id="filter-serie"
             value={filters.serie}
             onChange={(e) => handleChange("serie", e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -390,10 +435,14 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
 
         {/* Fase */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="filter-fase"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Fase (F1-F16)
           </label>
           <select
+            id="filter-fase"
             value={filters.fase}
             onChange={(e) => handleChange("fase", e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -409,10 +458,14 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
 
         {/* Observaciones */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="filter-observaciones"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Observaciones
           </label>
           <select
+            id="filter-observaciones"
             value={filters.observaciones}
             onChange={(e) => handleChange("observaciones", e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -428,10 +481,14 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
 
         {/* Ciclo */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="filter-ciclo"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Ciclo
           </label>
           <select
+            id="filter-ciclo"
             value={filters.ciclo}
             onChange={(e) => handleChange("ciclo", e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -447,10 +504,14 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
 
         {/* % de Avance */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="filter-porcentajeAvance"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             % de Avance
           </label>
           <select
+            id="filter-porcentajeAvance"
             value={filters.porcentajeAvance}
             onChange={(e) => handleChange("porcentajeAvance", e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -464,10 +525,14 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
 
         {/* Fecha Compromiso Desde */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="filter-fechaCompromisoDesde"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Fecha Compromiso (Desde)
           </label>
           <input
+            id="filter-fechaCompromisoDesde"
             type="date"
             value={filters.fechaCompromisoDesde}
             onChange={(e) =>
@@ -479,10 +544,14 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
 
         {/* Fecha Compromiso Hasta */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="filter-fechaCompromisoHasta"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Fecha Compromiso (Hasta)
           </label>
           <input
+            id="filter-fechaCompromisoHasta"
             type="date"
             value={filters.fechaCompromisoHasta}
             onChange={(e) =>
@@ -494,10 +563,14 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
 
         {/* Fecha Final Alistamiento Desde */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="filter-fechaFinalDesde"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Fecha Final Alistamiento (Desde)
           </label>
           <input
+            id="filter-fechaFinalDesde"
             type="date"
             value={filters.fechaFinalDesde}
             onChange={(e) => handleChange("fechaFinalDesde", e.target.value)}
@@ -507,10 +580,14 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
 
         {/* Fecha Final Alistamiento Hasta */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="filter-fechaFinalHasta"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Fecha Final Alistamiento (Hasta)
           </label>
           <input
+            id="filter-fechaFinalHasta"
             type="date"
             value={filters.fechaFinalHasta}
             onChange={(e) => handleChange("fechaFinalHasta", e.target.value)}

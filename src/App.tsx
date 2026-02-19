@@ -1,6 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { AuthProvider } from "./context/AuthContext";
-import { useAuth } from "./context/AuthContext";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import LoginButton from "./components/LoginButton";
 import SharePointTableReal from "./components/SharePointTableReal";
 import DashboardReal from "./components/DashboardReal";
@@ -15,10 +14,43 @@ import { LayoutDashboard, Table2, Plus, Loader2, Calendar } from "lucide-react";
 import {
   normalizeSharePointFields,
   getFieldValue,
-  denormalizeSharePointFields,
+  toDateOnlyString,
 } from "./utils/sharePointFieldMapping";
 
 type View = "dashboard" | "table";
+
+/** Payload del formulario de equipo (VehicleFormReal) */
+interface VehicleFormPayload {
+  Title?: string;
+  Serie?: string;
+  Prioridad?: number;
+  Modelo?: string;
+  OTT?: string;
+  Asesor?: string;
+  Sede?: string;
+  FechaSolicitud?: string;
+  FechaCompromisoComercial?: string;
+  FechaInicioCiclo?: string;
+  FechaFinalAlistamiento?: string;
+  Observaciones?: string;
+  Ciclo?: number;
+  F1?: string;
+  F2?: string;
+  F3?: string;
+  F4?: string;
+  F5?: string;
+  F6?: string;
+  F7?: string;
+  F8?: string;
+  F9?: string;
+  F10?: string;
+  F11?: string;
+  F12?: string;
+  F13?: string;
+  F14?: string;
+  F15?: string;
+  F16?: string;
+}
 
 function AppContent() {
   const { isAuthenticated } = useAuth();
@@ -44,20 +76,48 @@ function AppContent() {
     porcentajeAvance: "",
   });
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      // Si no está autenticado, cargar datos mock
-      loadMockData();
-    } else {
-      // Si está autenticado, intentar cargar datos reales
-      loadRealData();
-    }
-  }, [isAuthenticated]);
-
-  const loadMockData = () => {
+  const loadMockData = useCallback(() => {
     setItems(realItems);
     setUseMockData(true);
-  };
+  }, []);
+
+  const loadRealData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const itemsData = await sharePointService.getListItems();
+      console.log(`📊 Registros recibidos de SharePoint: ${itemsData.length}`);
+      const normalizedItems = itemsData.map((item) => ({
+        ...item,
+        fields: normalizeSharePointFields(item.fields),
+      }));
+      console.log(
+        `✅ Registros normalizados y listos para mostrar: ${normalizedItems.length}`
+      );
+      console.log(
+        `📋 Primeros 5 registros normalizados:`,
+        normalizedItems.slice(0, 5).map((i) => ({
+          id: i.id,
+          title: i.fields.Title,
+          serie: getFieldValue(i.fields, "Serie"),
+        }))
+      );
+      setItems(normalizedItems);
+      setUseMockData(false);
+    } catch (error) {
+      console.error("Error loading data:", error);
+      loadMockData();
+    } finally {
+      setIsLoading(false);
+    }
+  }, [loadMockData]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      loadMockData();
+    } else {
+      loadRealData();
+    }
+  }, [isAuthenticated, loadMockData, loadRealData]);
 
   // Filtrar items
   const filteredItems = useMemo(() => {
@@ -88,12 +148,6 @@ function AppContent() {
       )
         return false;
 
-      // Filtro por Fase
-      if (filters.fase) {
-        const faseValue = item.fields[filters.fase];
-        // Puedes agregar lógica adicional aquí si quieres filtrar por estado de la fase
-      }
-
       // Filtro por Observaciones
       if (
         filters.observaciones &&
@@ -108,69 +162,61 @@ function AppContent() {
       )
         return false;
 
-      // Filtro por Fecha de Compromiso (solo si el campo tiene valor)
+      // Filtro por Fecha de Compromiso (columna FechaCompromisoComercial) - comparación por día
       if (filters.fechaCompromisoDesde || filters.fechaCompromisoHasta) {
         const fechaCompromisoValue = getFieldValue(
           item.fields,
           "FechaCompromisoComercial"
         );
-        // Solo filtrar si el campo tiene un valor válido
-        if (fechaCompromisoValue) {
-          const fechaCompromiso = new Date(fechaCompromisoValue);
-          if (isNaN(fechaCompromiso.getTime())) return true; // Si la fecha es inválida, incluir el registro
-
-          if (filters.fechaCompromisoDesde) {
-            const desde = new Date(filters.fechaCompromisoDesde);
-            if (fechaCompromiso < desde) return false;
-          }
-          if (filters.fechaCompromisoHasta) {
-            const hasta = new Date(filters.fechaCompromisoHasta);
-            hasta.setHours(23, 59, 59, 999); // Incluir todo el día
-            if (fechaCompromiso > hasta) return false;
-          }
+        if (!fechaCompromisoValue) return false;
+        const fechaCompromiso = new Date(
+          fechaCompromisoValue as string | number | Date
+        );
+        if (Number.isNaN(fechaCompromiso.getTime())) return false;
+        const itemDateStr = toDateOnlyString(fechaCompromiso);
+        if (filters.fechaCompromisoDesde) {
+          const desdeStr = toDateOnlyString(new Date(filters.fechaCompromisoDesde));
+          if (itemDateStr < desdeStr) return false;
         }
-        // Si el campo no tiene valor, incluir el registro (no excluir por falta de fecha)
+        if (filters.fechaCompromisoHasta) {
+          const hastaStr = toDateOnlyString(new Date(filters.fechaCompromisoHasta));
+          if (itemDateStr > hastaStr) return false;
+        }
       }
 
-      // Filtro por Fecha Final Alistamiento (solo si el campo tiene valor)
+      // Filtro por Fecha Final Alistamiento (columna FechaFinalAlistamiento en SharePoint) - comparación por día
       if (filters.fechaFinalDesde || filters.fechaFinalHasta) {
         const fechaFinalValue = getFieldValue(
           item.fields,
           "FechaFinalAlistamiento"
         );
-        // Solo filtrar si el campo tiene un valor válido
-        if (fechaFinalValue) {
-          const fechaFinal = new Date(fechaFinalValue);
-          if (isNaN(fechaFinal.getTime())) return true; // Si la fecha es inválida, incluir el registro
-
-          if (filters.fechaFinalDesde) {
-            const desde = new Date(filters.fechaFinalDesde);
-            if (fechaFinal < desde) return false;
-          }
-          if (filters.fechaFinalHasta) {
-            const hasta = new Date(filters.fechaFinalHasta);
-            hasta.setHours(23, 59, 59, 999); // Incluir todo el día
-            if (fechaFinal > hasta) return false;
-          }
+        if (!fechaFinalValue) return false;
+        const fechaFinal = new Date(
+          fechaFinalValue as string | number | Date
+        );
+        if (Number.isNaN(fechaFinal.getTime())) return false;
+        const itemDateStr = toDateOnlyString(fechaFinal);
+        if (filters.fechaFinalDesde) {
+          const desdeStr = toDateOnlyString(new Date(filters.fechaFinalDesde));
+          if (itemDateStr < desdeStr) return false;
         }
-        // Si el campo no tiene valor, incluir el registro (no excluir por falta de fecha)
+        if (filters.fechaFinalHasta) {
+          const hastaStr = toDateOnlyString(new Date(filters.fechaFinalHasta));
+          if (itemDateStr > hastaStr) return false;
+        }
       }
 
       // Filtro por % de Avance
       if (filters.porcentajeAvance) {
-        // Helper para obtener porcentaje de avance
-        const getPorcentajeAvance = (fields: Record<string, any>): number => {
-          let porcentaje = getFieldValue(fields, "PorcentajeAvanceTotal");
-
-          if (typeof porcentaje === "string") {
-            porcentaje =
-              parseFloat(porcentaje.replace("%", "").replace(/[^0-9.]/g, "")) ||
-              0;
-          } else {
-            porcentaje = Number(porcentaje) || 0;
+        const getPorcentajeAvance = (
+          fields: Record<string, unknown>
+        ): number => {
+          const raw = getFieldValue(fields, "PorcentajeAvanceTotal");
+          if (typeof raw === "string") {
+            const cleaned = raw.replaceAll("%", "").replaceAll(/[^0-9.]/g, "");
+            return Number.parseFloat(cleaned) || 0;
           }
-
-          return porcentaje;
+          return Number(raw) || 0;
         };
 
         const avance = getPorcentajeAvance(item.fields);
@@ -189,43 +235,10 @@ function AppContent() {
     return filtered;
   }, [items, filters]);
 
-  const loadRealData = async () => {
-    try {
-      setIsLoading(true);
-      const itemsData = await sharePointService.getListItems();
-
-      console.log(`📊 Registros recibidos de SharePoint: ${itemsData.length}`);
-
-      // Normalizar los campos de SharePoint para usar nombres amigables
-      const normalizedItems = itemsData.map((item) => ({
-        ...item,
-        fields: normalizeSharePointFields(item.fields),
-      }));
-
-      console.log(
-        `✅ Registros normalizados y listos para mostrar: ${normalizedItems.length}`
-      );
-      console.log(
-        `📋 Primeros 5 registros normalizados:`,
-        normalizedItems.slice(0, 5).map((i) => ({
-          id: i.id,
-          title: i.fields.Title,
-          serie: getFieldValue(i.fields, "Serie"),
-        }))
-      );
-
-      setItems(normalizedItems);
-      setUseMockData(false);
-    } catch (error) {
-      console.error("Error loading data:", error);
-      // Si falla, usar datos mock
-      loadMockData();
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleAddVehicle = async (data: any, files?: File[]) => {
+  const handleAddVehicle = async (
+    data: VehicleFormPayload,
+    files?: File[]
+  ) => {
     if (useMockData) {
       // Simular guardado en mock
       const newItem: SharePointListItem = {
@@ -253,18 +266,16 @@ function AppContent() {
     } else {
       // Guardar en SharePoint - Convertir nombres amigables a nombres internos
       try {
-        // Preparar los datos con nombres internos de SharePoint
-        const sharePointFields: Record<string, any> = {
+        const sharePointFields: Record<string, unknown> = {
           Title: data.Title || "",
-          field_0: data.Serie || "", // Serie
-          field_1: data.Prioridad || 0, // Prioridad
-          field_2: data.Modelo || "", // Modelo
-          field_3: data.OTT || "", // OTT
-          field_4: data.Asesor || "", // Asesor
-          field_28: data.Sede || "", // Sede
+          field_0: data.Serie || "",
+          field_1: data.Prioridad ?? 0,
+          field_2: data.Modelo || "",
+          field_3: data.OTT || "",
+          field_4: data.Asesor || "",
+          field_28: data.Sede || "",
         };
 
-        // Fechas (convertir a formato ISO)
         if (data.FechaSolicitud) {
           sharePointFields.field_7 = new Date(
             data.FechaSolicitud + "T00:00:00Z"
@@ -278,7 +289,7 @@ function AppContent() {
         if (data.FechaInicioCiclo) {
           sharePointFields.field_10 = new Date(
             data.FechaInicioCiclo + "T00:00:00Z"
-          ).toISOString(); // FechaInicioCiclo
+          ).toISOString();
         }
         if (data.FechaFinalAlistamiento) {
           sharePointFields.FechaFinalAlistamiento = new Date(
@@ -286,34 +297,28 @@ function AppContent() {
           ).toISOString();
         }
 
-        // Campos opcionales
         if (data.Observaciones) {
-          sharePointFields.field_8 = data.Observaciones; // Observaciones
+          sharePointFields.field_8 = data.Observaciones;
         }
-        if (data.Ciclo) {
-          sharePointFields.field_29 = `Ciclo ${data.Ciclo}`; // Ciclo - Formato: "Ciclo 17"
+        if (data.Ciclo !== undefined && data.Ciclo !== null) {
+          sharePointFields.field_29 = `Ciclo ${data.Ciclo}`;
         }
 
-        // Fases F1-F16 (field_11 a field_26)
         for (let i = 1; i <= 16; i++) {
-          const faseKey = `F${i}`;
-          if (data[faseKey]) {
-            sharePointFields[`field_${10 + i}`] = data[faseKey]; // field_11, field_12, ..., field_26
+          const faseKey = `F${i}` as keyof VehicleFormPayload;
+          const value = data[faseKey];
+          if (value) {
+            sharePointFields[`field_${10 + i}`] = value;
           }
         }
 
-        const newItem = await sharePointService.createListItem(
-          sharePointFields
-        );
+        const newItem = await sharePointService.createListItem(sharePointFields);
         console.log(`✅ Equipo creado con ID: ${newItem.id}`);
 
-        // Subir archivos adjuntos si existen
         let uploadedCount = 0;
         let failedCount = 0;
         if (files && files.length > 0) {
           console.log(`📎 Iniciando subida de ${files.length} archivo(s)...`);
-
-          // Esperar un momento para que SharePoint procese el item
           await new Promise((resolve) => setTimeout(resolve, 1000));
 
           for (const file of files) {
@@ -321,9 +326,10 @@ function AppContent() {
               console.log(`⬆️ Subiendo: ${file.name}...`);
               await sharePointService.uploadAttachment(newItem.id, file);
               uploadedCount++;
-            } catch (fileError: any) {
+            } catch (fileError: unknown) {
               console.error(`❌ Error subiendo ${file.name}:`, fileError);
-              console.error("Detalles:", fileError.response?.data);
+              const err = fileError as { response?: { data?: unknown } };
+              console.error("Detalles:", err.response?.data);
               failedCount++;
             }
           }
@@ -343,13 +349,17 @@ function AppContent() {
             : "Equipo agregado exitosamente";
 
         alert(message);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Error adding vehicle:", error);
+        const err = error as {
+          response?: { data?: { error?: { message?: string } } };
+          message?: string;
+        };
         const errorMessage =
-          error.response?.data?.error?.message ||
-          error.message ||
+          err.response?.data?.error?.message ||
+          err.message ||
           "Error desconocido";
-        console.error("Error completo:", error.response?.data);
+        console.error("Error completo:", err.response?.data);
         alert(
           `Error al agregar equipo: ${errorMessage}. Revisa la consola para más detalles.`
         );
@@ -357,7 +367,10 @@ function AppContent() {
     }
   };
 
-  const handleEditVehicle = async (data: any, files?: File[]) => {
+  const handleEditVehicle = async (
+    data: VehicleFormPayload,
+    files?: File[]
+  ) => {
     if (!editingVehicle) return;
 
     if (useMockData) {
@@ -388,20 +401,17 @@ function AppContent() {
         "Equipo actualizado (modo prueba). En producción se guardará en SharePoint."
       );
     } else {
-      // Actualizar en SharePoint - Convertir nombres amigables a nombres internos
       try {
-        // Preparar los datos con nombres internos de SharePoint
-        const sharePointFields: Record<string, any> = {
+        const sharePointFields: Record<string, unknown> = {
           Title: data.Title || "",
-          field_0: data.Serie || "", // Serie
-          field_1: data.Prioridad || 0, // Prioridad
-          field_2: data.Modelo || "", // Modelo
-          field_3: data.OTT || "", // OTT
-          field_4: data.Asesor || "", // Asesor
-          field_28: data.Sede || "", // Sede
+          field_0: data.Serie || "",
+          field_1: data.Prioridad ?? 0,
+          field_2: data.Modelo || "",
+          field_3: data.OTT || "",
+          field_4: data.Asesor || "",
+          field_28: data.Sede || "",
         };
 
-        // Fechas (convertir a formato ISO)
         if (data.FechaSolicitud) {
           sharePointFields.field_7 = new Date(
             data.FechaSolicitud + "T00:00:00Z"
@@ -415,7 +425,7 @@ function AppContent() {
         if (data.FechaInicioCiclo) {
           sharePointFields.field_10 = new Date(
             data.FechaInicioCiclo + "T00:00:00Z"
-          ).toISOString(); // FechaInicioCiclo
+          ).toISOString();
         }
         if (data.FechaFinalAlistamiento) {
           sharePointFields.FechaFinalAlistamiento = new Date(
@@ -423,19 +433,18 @@ function AppContent() {
           ).toISOString();
         }
 
-        // Campos opcionales
         if (data.Observaciones) {
-          sharePointFields.field_8 = data.Observaciones; // Observaciones
+          sharePointFields.field_8 = data.Observaciones;
         }
-        if (data.Ciclo) {
-          sharePointFields.field_29 = `Ciclo ${data.Ciclo}`; // Ciclo - Formato: "Ciclo 17"
+        if (data.Ciclo !== undefined && data.Ciclo !== null) {
+          sharePointFields.field_29 = `Ciclo ${data.Ciclo}`;
         }
 
-        // Fases F1-F16 (field_11 a field_26)
         for (let i = 1; i <= 16; i++) {
-          const faseKey = `F${i}`;
-          if (data[faseKey]) {
-            sharePointFields[`field_${10 + i}`] = data[faseKey]; // field_11, field_12, ..., field_26
+          const faseKey = `F${i}` as keyof VehicleFormPayload;
+          const value = data[faseKey];
+          if (value) {
+            sharePointFields[`field_${10 + i}`] = value;
           }
         }
 
@@ -445,7 +454,6 @@ function AppContent() {
         console.log(`📋 Item completo:`, editingVehicle);
         console.log(`📋 Datos a enviar:`, sharePointFields);
 
-        // Validar que el ID existe y es válido
         if (!editingVehicle.id || editingVehicle.id.trim() === "") {
           throw new Error("El ID del item no es válido");
         }
@@ -456,13 +464,10 @@ function AppContent() {
         );
         console.log(`✅ Equipo actualizado con ID: ${editingVehicle.id}`);
 
-        // Subir archivos adjuntos si existen
         let uploadedCount = 0;
         let failedCount = 0;
         if (files && files.length > 0) {
           console.log(`📎 Iniciando subida de ${files.length} archivo(s)...`);
-
-          // Esperar un momento para que SharePoint procese la actualización
           await new Promise((resolve) => setTimeout(resolve, 500));
 
           for (const file of files) {
@@ -470,9 +475,10 @@ function AppContent() {
               console.log(`⬆️ Subiendo: ${file.name}...`);
               await sharePointService.uploadAttachment(editingVehicle.id, file);
               uploadedCount++;
-            } catch (fileError: any) {
+            } catch (fileError: unknown) {
               console.error(`❌ Error subiendo ${file.name}:`, fileError);
-              console.error("Detalles:", fileError.response?.data);
+              const err = fileError as { response?: { data?: unknown } };
+              console.error("Detalles:", err.response?.data);
               failedCount++;
             }
           }
@@ -492,13 +498,17 @@ function AppContent() {
             : "Equipo actualizado exitosamente";
 
         alert(message);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Error updating vehicle:", error);
+        const err = error as {
+          response?: { data?: { error?: { message?: string } } };
+          message?: string;
+        };
         const errorMessage =
-          error.response?.data?.error?.message ||
-          error.message ||
+          err.response?.data?.error?.message ||
+          err.message ||
           "Error desconocido";
-        console.error("Error completo:", error.response?.data);
+        console.error("Error completo:", err.response?.data);
         alert(
           `Error al actualizar equipo: ${errorMessage}. Revisa la consola para más detalles.`
         );

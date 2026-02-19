@@ -69,9 +69,9 @@ export const ReverseFieldMapping: Record<string, string> = Object.entries(
  * Convierte nombres internos a nombres amigables
  */
 export function normalizeSharePointFields(
-  fields: Record<string, any>
-): Record<string, any> {
-  const normalized: Record<string, any> = {};
+  fields: Record<string, unknown>
+): Record<string, unknown> {
+  const normalized: Record<string, unknown> = {};
   
   for (const [key, value] of Object.entries(fields)) {
     // Verificar si existe un mapeo para este campo
@@ -92,9 +92,9 @@ export function normalizeSharePointFields(
  * para enviar datos a la API
  */
 export function denormalizeSharePointFields(
-  fields: Record<string, any>
-): Record<string, any> {
-  const denormalized: Record<string, any> = {};
+  fields: Record<string, unknown>
+): Record<string, unknown> {
+  const denormalized: Record<string, unknown> = {};
   
   for (const [key, value] of Object.entries(fields)) {
     // Verificar si existe un mapeo inverso
@@ -106,13 +106,23 @@ export function denormalizeSharePointFields(
 }
 
 /**
+ * Retorna YYYY-MM-DD en hora local para comparar solo el día (alineado con filtros de SharePoint).
+ */
+export function toDateOnlyString(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/**
  * Obtiene el valor de un campo normalizado desde un objeto de campos
  * Intenta múltiples nombres posibles
  */
 export function getFieldValue(
-  fields: Record<string, any>,
+  fields: Record<string, unknown>,
   fieldName: string
-): any {
+): unknown {
   // Intentar con el nombre amigable primero
   if (fields[fieldName] !== undefined) {
     return fields[fieldName];
@@ -128,14 +138,14 @@ export function getFieldValue(
   const fieldKey = Object.keys(fields).find((key) => {
     // Normalizar la clave (remover guiones bajos y códigos Unicode comunes)
     const normalizedKey = key
-      .replace(/_x0020_/g, " ")
-      .replace(/_x0025_/g, "%")
-      .replace(/x0025__x0020_/g, "% ")
-      .replace(/_x00ed_/g, "í")
+      .replaceAll(/_x0020_/g, " ")
+      .replaceAll(/_x0025_/g, "%")
+      .replaceAll(/x0025__x0020_/g, "% ")
+      .replaceAll(/_x00ed_/g, "í")
       .toLowerCase()
-      .replace(/\s+/g, "");
+      .replaceAll(/\s+/g, "");
     
-    const normalizedFieldName = fieldName.toLowerCase().replace(/\s+/g, "");
+    const normalizedFieldName = fieldName.toLowerCase().replaceAll(/\s+/g, "");
     
     // Buscar coincidencias parciales
     if (normalizedKey.includes(normalizedFieldName) || normalizedFieldName.includes(normalizedKey)) {
@@ -159,7 +169,7 @@ export function getFieldValue(
  * Usa la fórmula de SharePoint: =(F1*0.0227272727272727)+...+(F16*0.0227272727272727)
  * Las fases deben estar en formato "0%", "50%", "100%"
  */
-export function calcularPorcentajeAvance(fields: Record<string, any>): number {
+export function calcularPorcentajeAvance(fields: Record<string, unknown>): number {
   const pesos = [
     0.0227272727272727, // F1
     0.0227272727272727, // F2
@@ -186,9 +196,15 @@ export function calcularPorcentajeAvance(fields: Record<string, any>): number {
     
     // Convertir porcentaje a número (0%, 50%, 100% -> 0, 0.5, 1)
     let valorNumerico = 0;
-    if (faseValue) {
-      const porcentajeStr = String(faseValue).replace('%', '');
-      const porcentajeNum = parseFloat(porcentajeStr) || 0;
+    if (faseValue !== undefined && faseValue !== null) {
+      const rawStr =
+        typeof faseValue === "string"
+          ? faseValue
+          : typeof faseValue === "number"
+            ? String(faseValue)
+            : "";
+      const porcentajeNum =
+        Number.parseFloat(rawStr.replaceAll("%", "")) || 0;
       valorNumerico = porcentajeNum / 100; // Convierte a decimal (0, 0.5, 1)
     }
     
