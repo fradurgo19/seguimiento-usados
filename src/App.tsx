@@ -174,13 +174,12 @@ function AppContent() {
         );
         if (Number.isNaN(fechaCompromiso.getTime())) return false;
         const itemDateStr = toDateOnlyString(fechaCompromiso);
+        // Los inputs type="date" ya envían YYYY-MM-DD; usarlos directos evita desfase por zona horaria
         if (filters.fechaCompromisoDesde) {
-          const desdeStr = toDateOnlyString(new Date(filters.fechaCompromisoDesde));
-          if (itemDateStr < desdeStr) return false;
+          if (itemDateStr < filters.fechaCompromisoDesde) return false;
         }
         if (filters.fechaCompromisoHasta) {
-          const hastaStr = toDateOnlyString(new Date(filters.fechaCompromisoHasta));
-          if (itemDateStr > hastaStr) return false;
+          if (itemDateStr > filters.fechaCompromisoHasta) return false;
         }
       }
 
@@ -196,13 +195,12 @@ function AppContent() {
         );
         if (Number.isNaN(fechaFinal.getTime())) return false;
         const itemDateStr = toDateOnlyString(fechaFinal);
+        // Los inputs type="date" ya envían YYYY-MM-DD; usarlos directos evita desfase por zona horaria
         if (filters.fechaFinalDesde) {
-          const desdeStr = toDateOnlyString(new Date(filters.fechaFinalDesde));
-          if (itemDateStr < desdeStr) return false;
+          if (itemDateStr < filters.fechaFinalDesde) return false;
         }
         if (filters.fechaFinalHasta) {
-          const hastaStr = toDateOnlyString(new Date(filters.fechaFinalHasta));
-          if (itemDateStr > hastaStr) return false;
+          if (itemDateStr > filters.fechaFinalHasta) return false;
         }
       }
 

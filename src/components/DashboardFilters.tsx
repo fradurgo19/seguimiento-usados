@@ -112,18 +112,13 @@ function matchesFechaCompromiso(
     return true;
   const value = getFieldValue(item.fields, "FechaCompromisoComercial");
   if (!value) return false;
-  const date = new Date(value);
+  const date = new Date(value as string | number | Date);
   if (Number.isNaN(date.getTime())) return false;
   const itemStr = toDateOnlyString(date);
-  if (
-    filters.fechaCompromisoDesde &&
-    itemStr < toDateOnlyString(new Date(filters.fechaCompromisoDesde))
-  )
+  // Los inputs type="date" envían YYYY-MM-DD; usarlos directos evita desfase por zona horaria
+  if (filters.fechaCompromisoDesde && itemStr < filters.fechaCompromisoDesde)
     return false;
-  if (
-    filters.fechaCompromisoHasta &&
-    itemStr > toDateOnlyString(new Date(filters.fechaCompromisoHasta))
-  )
+  if (filters.fechaCompromisoHasta && itemStr > filters.fechaCompromisoHasta)
     return false;
   return true;
 }
@@ -139,18 +134,13 @@ function matchesFechaFinalAlistamiento(
     return true;
   const value = getFieldValue(item.fields, "FechaFinalAlistamiento");
   if (!value) return false;
-  const date = new Date(value);
+  const date = new Date(value as string | number | Date);
   if (Number.isNaN(date.getTime())) return false;
   const itemStr = toDateOnlyString(date);
-  if (
-    filters.fechaFinalDesde &&
-    itemStr < toDateOnlyString(new Date(filters.fechaFinalDesde))
-  )
+  // Los inputs type="date" envían YYYY-MM-DD; usarlos directos evita desfase por zona horaria
+  if (filters.fechaFinalDesde && itemStr < filters.fechaFinalDesde)
     return false;
-  if (
-    filters.fechaFinalHasta &&
-    itemStr > toDateOnlyString(new Date(filters.fechaFinalHasta))
-  )
+  if (filters.fechaFinalHasta && itemStr > filters.fechaFinalHasta)
     return false;
   return true;
 }
