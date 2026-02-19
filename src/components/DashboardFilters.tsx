@@ -499,47 +499,59 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           </select>
         </div>
 
-        {/* Ciclo - selección múltiple */}
-        <fieldset className="border border-gray-300 rounded-lg bg-white px-3 py-2 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent min-h-[2.5rem] max-h-48 overflow-y-auto">
-          <legend className="text-sm font-medium text-gray-700 mb-1 px-1">
-            Ciclo
-          </legend>
-          <div className="flex flex-wrap gap-x-3 gap-y-1 mb-2 border-b border-gray-100 pb-2">
-            <button
-              type="button"
-              onClick={handleCicloSelectAll}
-              className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-            >
-              Todos
-            </button>
-            <button
-              type="button"
-              onClick={handleCicloClear}
-              className="text-xs text-gray-500 hover:text-gray-700 font-medium"
-            >
-              Ninguno
-            </button>
-          </div>
-          <div className="flex flex-col gap-1">
-            {ciclos.map((ciclo) => (
-              <label
-                key={ciclo}
-                className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded px-1 py-0.5 text-sm"
+        {/* Ciclo - selección múltiple (lista contraíble) */}
+        <details className="group border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
+          <summary className="text-sm font-medium text-gray-700 px-3 py-2 cursor-pointer list-none flex items-center justify-between gap-2 hover:bg-gray-50 rounded-lg [&::-webkit-details-marker]:hidden">
+            <span>
+              Ciclo
+              {filters.ciclo.length > 0 && (
+                <span className="ml-1 text-gray-500 font-normal">
+                  ({filters.ciclo.length} seleccionados)
+                </span>
+              )}
+            </span>
+            <span className="text-gray-400 group-open:rotate-180 transition-transform shrink-0" aria-hidden>
+              ▼
+            </span>
+          </summary>
+          <div className="px-3 pb-3 pt-1 border-t border-gray-100 max-h-48 overflow-y-auto">
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mb-2 pt-2 border-b border-gray-100 pb-2">
+              <button
+                type="button"
+                onClick={handleCicloSelectAll}
+                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
               >
-                <input
-                  type="checkbox"
-                  checked={filters.ciclo.includes(ciclo)}
-                  onChange={() => handleCicloToggle(ciclo)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span>{ciclo}</span>
-              </label>
-            ))}
+                Todos
+              </button>
+              <button
+                type="button"
+                onClick={handleCicloClear}
+                className="text-xs text-gray-500 hover:text-gray-700 font-medium"
+              >
+                Ninguno
+              </button>
+            </div>
+            <div className="flex flex-col gap-1">
+              {ciclos.map((ciclo) => (
+                <label
+                  key={ciclo}
+                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded px-1 py-0.5 text-sm"
+                >
+                  <input
+                    type="checkbox"
+                    checked={filters.ciclo.includes(ciclo)}
+                    onChange={() => handleCicloToggle(ciclo)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span>{ciclo}</span>
+                </label>
+              ))}
+            </div>
+            {ciclos.length === 0 && (
+              <p className="text-sm text-gray-500 py-1">Sin ciclos disponibles</p>
+            )}
           </div>
-          {ciclos.length === 0 && (
-            <p className="text-sm text-gray-500 py-1">Sin ciclos disponibles</p>
-          )}
-        </fieldset>
+        </details>
 
         {/* % de Avance */}
         <div>
