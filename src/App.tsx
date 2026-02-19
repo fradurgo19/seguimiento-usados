@@ -68,7 +68,7 @@ function AppContent() {
     serie: "",
     fase: "",
     observaciones: "",
-    ciclo: "",
+    ciclo: [],
     fechaCompromisoDesde: "",
     fechaCompromisoHasta: "",
     fechaFinalDesde: "",
@@ -155,12 +155,15 @@ function AppContent() {
       )
         return false;
 
-      // Filtro por Ciclo
-      if (
-        filters.ciclo &&
-        getFieldValue(item.fields, "Ciclo") !== filters.ciclo
-      )
-        return false;
+      // Filtro por Ciclo (selección múltiple)
+      if (filters.ciclo.length > 0) {
+        const raw = getFieldValue(item.fields, "Ciclo");
+        let itemCicloStr = "";
+        if (typeof raw === "string") itemCicloStr = raw;
+        else if (raw != null && typeof raw === "number")
+          itemCicloStr = String(raw);
+        if (!filters.ciclo.includes(itemCicloStr)) return false;
+      }
 
       // Filtro por Fecha de Compromiso (columna FechaCompromisoComercial) - comparación por día
       if (filters.fechaCompromisoDesde || filters.fechaCompromisoHasta) {

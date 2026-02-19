@@ -25,7 +25,7 @@ export interface FilterState {
   serie: string;
   fase: string;
   observaciones: string;
-  ciclo: string;
+  ciclo: string[];
   fechaCompromisoDesde: string;
   fechaCompromisoHasta: string;
   fechaFinalDesde: string;
@@ -96,8 +96,12 @@ function matchesCiclo(
   filters: FilterState,
   excludeField: keyof FilterState
 ): boolean {
-  if (excludeField === "ciclo" || !filters.ciclo) return true;
-  return getFieldValue(item.fields, "Ciclo") === filters.ciclo;
+  if (excludeField === "ciclo" || filters.ciclo.length === 0) return true;
+  const raw = getFieldValue(item.fields, "Ciclo");
+  let itemCicloStr = "";
+  if (typeof raw === "string") itemCicloStr = raw;
+  else if (raw != null && typeof raw === "number") itemCicloStr = String(raw);
+  return filters.ciclo.includes(itemCicloStr);
 }
 
 function matchesFechaCompromiso(
@@ -288,6 +292,22 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
     });
   };
 
+  const handleCicloToggle = (cicloValue: string) => {
+    const current = filters.ciclo;
+    const next = current.includes(cicloValue)
+      ? current.filter((c) => c !== cicloValue)
+      : [...current, cicloValue];
+    onFilterChange({ ...filters, ciclo: next });
+  };
+
+  const handleCicloSelectAll = () => {
+    onFilterChange({ ...filters, ciclo: [...ciclos] });
+  };
+
+  const handleCicloClear = () => {
+    onFilterChange({ ...filters, ciclo: [] });
+  };
+
   const clearFilters = () => {
     onFilterChange({
       sede: "",
@@ -296,7 +316,7 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
       serie: "",
       fase: "",
       observaciones: "",
-      ciclo: "",
+      ciclo: [],
       fechaCompromisoDesde: "",
       fechaCompromisoHasta: "",
       fechaFinalDesde: "",
@@ -305,7 +325,17 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
     });
   };
 
-  const hasActiveFilters = Object.values(filters).some((v) => v !== "");
+  const hasActiveFilters = ((): boolean => {
+    const entries = Object.entries(filters) as [
+      keyof FilterState,
+      FilterState[keyof FilterState],
+    ][];
+    return entries.some(([key, v]) =>
+      key === "ciclo"
+        ? Array.isArray(v) && v.length > 0
+        : (v as string) !== ""
+    );
+  })();
 
   return (
     <div className="bg-white rounded-lg shadow p-6 mb-6 w-full">
@@ -469,28 +499,47 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           </select>
         </div>
 
-        {/* Ciclo */}
-        <div>
-          <label
-            htmlFor="filter-ciclo"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
+        {/* Ciclo - selección múltiple */}
+        <fieldset className="border border-gray-300 rounded-lg bg-white px-3 py-2 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent min-h-[2.5rem] max-h-48 overflow-y-auto">
+          <legend className="text-sm font-medium text-gray-700 mb-1 px-1">
             Ciclo
-          </label>
-          <select
-            id="filter-ciclo"
-            value={filters.ciclo}
-            onChange={(e) => handleChange("ciclo", e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="">Todos los ciclos</option>
+          </legend>
+          <div className="flex flex-wrap gap-x-3 gap-y-1 mb-2 border-b border-gray-100 pb-2">
+            <button
+              type="button"
+              onClick={handleCicloSelectAll}
+              className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+            >
+              Todos
+            </button>
+            <button
+              type="button"
+              onClick={handleCicloClear}
+              className="text-xs text-gray-500 hover:text-gray-700 font-medium"
+            >
+              Ninguno
+            </button>
+          </div>
+          <div className="flex flex-col gap-1">
             {ciclos.map((ciclo) => (
-              <option key={ciclo} value={ciclo}>
-                {ciclo}
-              </option>
+              <label
+                key={ciclo}
+                className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded px-1 py-0.5 text-sm"
+              >
+                <input
+                  type="checkbox"
+                  checked={filters.ciclo.includes(ciclo)}
+                  onChange={() => handleCicloToggle(ciclo)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span>{ciclo}</span>
+              </label>
             ))}
-          </select>
-        </div>
+          </div>
+          {ciclos.length === 0 && (
+            <p className="text-sm text-gray-500 py-1">Sin ciclos disponibles</p>
+          )}
+        </fieldset>
 
         {/* % de Avance */}
         <div>
