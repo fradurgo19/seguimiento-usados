@@ -187,6 +187,12 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
     value,
   }));
 
+  const totalSedes = sedesData.reduce((sum, d) => sum + d.value, 0);
+  const sedesDataConTotal = [
+    ...sedesData,
+    { name: "Total", value: totalSedes },
+  ];
+
   // Datos por Modelo
   const equiposPorModelo = items.reduce(
     (acc: Record<string, number>, item) => {
@@ -368,12 +374,19 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
             Distribución por Sede
           </h3>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={sedesData}>
+            <BarChart data={sedesDataConTotal}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
-              <Bar dataKey="value" fill="#10b981" />
+              <Bar dataKey="value" fill="#10b981">
+                {sedesDataConTotal.map((entry) => (
+                  <Cell
+                    key={`sede-${entry.name}`}
+                    fill={entry.name === "Total" ? "#1d4ed8" : "#10b981"}
+                  />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
