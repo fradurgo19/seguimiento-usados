@@ -55,11 +55,15 @@ const Dashboard: React.FC<DashboardProps> = ({ items }) => {
   ];
 
   // Datos para gráfico de equipos por responsable
-  const equiposPorResponsable = items.reduce((acc: any, item) => {
-    const responsable = item.fields.Responsable || "Sin asignar";
-    acc[responsable] = (acc[responsable] || 0) + 1;
-    return acc;
-  }, {});
+  const equiposPorResponsable = items.reduce(
+    (acc: Record<string, number>, item) => {
+      const responsable =
+        (item.fields.Responsable as string) || "Sin asignar";
+      acc[responsable] = (acc[responsable] ?? 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
   const responsablesData = Object.entries(equiposPorResponsable).map(
     ([name, value]) => ({
@@ -69,18 +73,27 @@ const Dashboard: React.FC<DashboardProps> = ({ items }) => {
   );
 
   // Datos para gráfico de prioridad
-  const prioridadData = items.reduce((acc: any, item) => {
-    const prioridad = item.fields.Prioridad || "Sin prioridad";
-    acc[prioridad] = (acc[prioridad] || 0) + 1;
-    return acc;
-  }, {});
+  const prioridadData = items.reduce(
+    (acc: Record<string, number>, item) => {
+      const prioridad =
+        String(item.fields.Prioridad ?? "") || "Sin prioridad";
+      acc[prioridad] = (acc[prioridad] ?? 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
+
+  const getPrioridadColor = (name: string): string => {
+    if (name === "Alta") return "#ef4444";
+    if (name === "Media") return "#f59e0b";
+    return "#10b981";
+  };
 
   const prioridadChartData = Object.entries(prioridadData).map(
     ([name, value]) => ({
       name,
       value,
-      color:
-        name === "Alta" ? "#ef4444" : name === "Media" ? "#f59e0b" : "#10b981",
+      color: getPrioridadColor(name),
     })
   );
 
@@ -199,15 +212,21 @@ const Dashboard: React.FC<DashboardProps> = ({ items }) => {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }: any) =>
-                  `${name}: ${(percent * 100).toFixed(0)}%`
+                label={({
+                  name,
+                  percent,
+                }: {
+                  name?: string;
+                  percent?: number;
+                }) =>
+                  `${name ?? ""}: ${((percent ?? 0) * 100).toFixed(0)}%`
                 }
                 outerRadius={100}
                 fill="#8884d8"
                 dataKey="value"
               >
-                {estadosData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+                {estadosData.map((entry) => (
+                  <Cell key={`cell-estado-${entry.name}`} fill={entry.color} />
                 ))}
               </Pie>
               <Tooltip />
@@ -243,15 +262,24 @@ const Dashboard: React.FC<DashboardProps> = ({ items }) => {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }: any) =>
-                  `${name}: ${(percent * 100).toFixed(0)}%`
+                label={({
+                  name,
+                  percent,
+                }: {
+                  name?: string;
+                  percent?: number;
+                }) =>
+                  `${name ?? ""}: ${((percent ?? 0) * 100).toFixed(0)}%`
                 }
                 outerRadius={100}
                 fill="#8884d8"
                 dataKey="value"
               >
-                {prioridadChartData.map((entry: any, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+                {prioridadChartData.map((entry) => (
+                  <Cell
+                    key={`cell-prioridad-${entry.name}`}
+                    fill={entry.color}
+                  />
                 ))}
               </Pie>
               <Tooltip />

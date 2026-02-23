@@ -20,7 +20,6 @@ import { TrendingUp, Clock, CheckCircle, AlertCircle, Car } from "lucide-react";
 import { SharePointListItem } from "../services/sharePointService";
 import {
   getFieldValue,
-  calcularPorcentajeAvance,
 } from "../utils/sharePointFieldMapping";
 
 interface DashboardRealProps {
@@ -98,19 +97,21 @@ const TopScrollBar: React.FC = () => {
 };
 
 const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
-  // Función helper para obtener porcentaje de avance desde SharePoint
-  const getPorcentajeAvance = (fields: Record<string, any>) => {
-    let porcentaje = getFieldValue(fields, "PorcentajeAvanceTotal");
+  // Helper: valor de campo como string para mostrar en UI (evita unknown en ReactNode)
+  const fieldStr = (fields: Record<string, unknown>, key: string): string => {
+    const raw = getFieldValue(fields, key);
+    if (raw === null || raw === undefined) return "";
+    if (typeof raw === "string" || typeof raw === "number") return String(raw);
+    return "";
+  };
 
-    // Si es un string (ej: "97%"), extraer el número
-    if (typeof porcentaje === "string") {
-      porcentaje =
-        parseFloat(porcentaje.replace("%", "").replace(/[^0-9.]/g, "")) || 0;
-    } else {
-      porcentaje = Number(porcentaje) || 0;
+  const getPorcentajeAvance = (fields: Record<string, unknown>): number => {
+    const raw = getFieldValue(fields, "PorcentajeAvanceTotal");
+    if (typeof raw === "string") {
+      const cleaned = raw.replaceAll("%", "").replaceAll(/[^0-9.]/g, "");
+      return Number.parseFloat(cleaned) || 0;
     }
-
-    return porcentaje;
+    return Number(raw) || 0;
   };
 
   // Ordenar items por % Avance (menor a mayor)
@@ -155,12 +156,14 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
     { name: "Pendientes", value: pendientes, color: "#f59e0b" },
   ];
 
-  // Datos por Asesor
-  const equiposPorAsesor = items.reduce((acc: any, item) => {
-    const asesor = getFieldValue(item.fields, "Asesor") || "Sin asignar";
-    acc[asesor] = (acc[asesor] || 0) + 1;
-    return acc;
-  }, {});
+  const equiposPorAsesor = items.reduce(
+    (acc: Record<string, number>, item) => {
+      const asesor = fieldStr(item.fields, "Asesor") || "Sin asignar";
+      acc[asesor] = (acc[asesor] ?? 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
   const asesoresData = Object.entries(equiposPorAsesor).map(
     ([name, value]) => ({
@@ -170,11 +173,14 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
   );
 
   // Datos por Sede
-  const equiposPorSede = items.reduce((acc: any, item) => {
-    const sede = getFieldValue(item.fields, "Sede") || "Sin sede";
-    acc[sede] = (acc[sede] || 0) + 1;
-    return acc;
-  }, {});
+  const equiposPorSede = items.reduce(
+    (acc: Record<string, number>, item) => {
+      const sede = fieldStr(item.fields, "Sede") || "Sin sede";
+      acc[sede] = (acc[sede] ?? 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
   const sedesData = Object.entries(equiposPorSede).map(([name, value]) => ({
     name,
@@ -182,18 +188,34 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
   }));
 
   // Datos por Modelo
-  const equiposPorModelo = items.reduce((acc: any, item) => {
-    const modelo = getFieldValue(item.fields, "Modelo") || "Sin modelo";
-    acc[modelo] = (acc[modelo] || 0) + 1;
-    return acc;
-  }, {});
+  const equiposPorModelo = items.reduce(
+    (acc: Record<string, number>, item) => {
+      const modelo = fieldStr(item.fields, "Modelo") || "Sin modelo";
+      acc[modelo] = (acc[modelo] ?? 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
-  const modelosData = Object.entries(equiposPorModelo)
-    .map(([name, value]) => ({
+  const modelosData = Object.entries(equiposPorModelo).map(
+    ([name, value], idx) => ({
       name,
       value,
-    }))
-    .slice(0, 5); // Top 5 modelos
+      color:
+        [
+          "#3b82f6",
+          "#10b981",
+          "#f59e0b",
+          "#ef4444",
+          "#8b5cf6",
+          "#06b6d4",
+          "#84cc16",
+          "#ec4899",
+          "#6366f1",
+          "#14b8a6",
+        ][idx % 10] ?? "#6b7280",
+    })
+  );
 
   return (
     <div className="w-full space-y-6">
@@ -302,15 +324,21 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }: any) =>
-                  `${name}: ${(percent * 100).toFixed(0)}%`
+                label={({
+                  name,
+                  percent,
+                }: {
+                  name?: string;
+                  percent?: number;
+                }) =>
+                  `${name ?? ""}: ${((percent ?? 0) * 100).toFixed(0)}%`
                 }
                 outerRadius={100}
                 fill="#8884d8"
                 dataKey="value"
               >
-                {avanceData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+                {avanceData.map((entry) => (
+                  <Cell key={`cell-avance-${entry.name}`} fill={entry.color} />
                 ))}
               </Pie>
               <Tooltip />
@@ -350,11 +378,14 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
           </ResponsiveContainer>
         </div>
 
-        {/* Top 5 Modelos */}
+        {/* Distribución por Modelo (todos los modelos y total) */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Top 5 Modelos
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+            Distribución por Modelo
           </h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Total: {items.length} equipo{items.length === 1 ? "" : "s"}
+          </p>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -367,14 +398,10 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                 fill="#8884d8"
                 dataKey="value"
               >
-                {modelosData.map((_, index) => (
+                {modelosData.map((entry) => (
                   <Cell
-                    key={`cell-${index}`}
-                    fill={
-                      ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"][
-                        index
-                      ]
-                    }
+                    key={`cell-modelo-${entry.name}`}
+                    fill={entry.color}
                   />
                 ))}
               </Pie>
@@ -402,11 +429,11 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900 truncate text-sm">
-                        {getFieldValue(item.fields, "Title") || "-"}
+                        {fieldStr(item.fields, "Title") || "-"}
                       </p>
                       <p className="text-xs text-gray-600 truncate mt-1">
-                        📦 {getFieldValue(item.fields, "Modelo")} • S/N:{" "}
-                        {getFieldValue(item.fields, "Serie")}
+                        📦 {fieldStr(item.fields, "Modelo")} • S/N:{" "}
+                        {fieldStr(item.fields, "Serie")}
                       </p>
                     </div>
                     <span className="ml-3 text-lg font-bold text-blue-600">
@@ -480,13 +507,13 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                           <div className="flex items-center justify-between">
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-semibold text-gray-900 truncate">
-                                {getFieldValue(item.fields, "Title") ||
-                                  getFieldValue(item.fields, "Serie") ||
+                                {fieldStr(item.fields, "Title") ||
+                                  fieldStr(item.fields, "Serie") ||
                                   "Sin título"}
                               </p>
                               <p className="text-xs text-gray-600 mt-1">
-                                📦 {getFieldValue(item.fields, "Modelo")} • 👤{" "}
-                                {getFieldValue(item.fields, "Asesor")}
+                                📦 {fieldStr(item.fields, "Modelo")} • 👤{" "}
+                                {fieldStr(item.fields, "Asesor")}
                               </p>
                             </div>
                             <div className="ml-3 text-right">
@@ -554,13 +581,13 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                           <div className="flex items-center justify-between">
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-semibold text-gray-900 truncate">
-                                {getFieldValue(item.fields, "Title") ||
-                                  getFieldValue(item.fields, "Serie") ||
+                                {fieldStr(item.fields, "Title") ||
+                                  fieldStr(item.fields, "Serie") ||
                                   "Sin título"}
                               </p>
                               <p className="text-xs text-gray-600 mt-1">
-                                📦 {getFieldValue(item.fields, "Modelo")} • 👤{" "}
-                                {getFieldValue(item.fields, "Asesor")}
+                                📦 {fieldStr(item.fields, "Modelo")} • 👤{" "}
+                                {fieldStr(item.fields, "Asesor")}
                               </p>
                             </div>
                             <div className="ml-3 text-right">
@@ -593,7 +620,7 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 xl:grid-cols-16 gap-3 w-full">
           {Array.from({ length: 16 }, (_, i) => i + 1).map((num) => {
             const completadas = items.filter(
-              (item) => getFieldValue(item.fields, `F${num}`) === "100%"
+              (item) => fieldStr(item.fields, `F${num}`) === "100%"
             ).length;
             const porcentaje = (completadas / items.length) * 100;
             return (
@@ -641,14 +668,14 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                   <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-900 truncate text-sm">
-                      {getFieldValue(item.fields, "Title")}
+                      {fieldStr(item.fields, "Title")}
                     </p>
                     <p className="text-xs text-gray-700 truncate mt-1">
-                      📦 {getFieldValue(item.fields, "Modelo")} • S/N:{" "}
-                      {getFieldValue(item.fields, "Serie")}
+                      📦 {fieldStr(item.fields, "Modelo")} • S/N:{" "}
+                      {fieldStr(item.fields, "Serie")}
                     </p>
                     <p className="text-xs text-gray-600 truncate mt-0.5">
-                      👤 {getFieldValue(item.fields, "Asesor")}
+                      👤 {fieldStr(item.fields, "Asesor")}
                     </p>
                   </div>
                 </div>
@@ -770,7 +797,6 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                   }
                 };
 
-                // Prioridad es solo un número, sin colores especiales
                 const prioridadValue =
                   Number(getFieldValue(item.fields, "Prioridad")) || 0;
 
@@ -796,33 +822,33 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                       className="px-4 py-3 sticky bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 border-r border-blue-300"
                       style={{ left: "110px", width: "130px" }}
                     >
-                      {getFieldValue(item.fields, "Serie")}
+                      {fieldStr(item.fields, "Serie")}
                     </td>
                     <td
                       className="px-4 py-3 sticky bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 border-r border-blue-300"
                       style={{ left: "240px", width: "130px" }}
                     >
-                      {getFieldValue(item.fields, "OTT")}
+                      {fieldStr(item.fields, "OTT")}
                     </td>
                     <td
                       className="px-4 py-3 sticky bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 border-r border-blue-300"
                       style={{ left: "370px", width: "130px" }}
                     >
-                      {getFieldValue(item.fields, "Modelo")}
+                      {fieldStr(item.fields, "Modelo")}
                     </td>
                     <td
                       className="px-4 py-3 sticky bg-blue-50 text-sm text-gray-900 whitespace-nowrap z-10 border-r-4 border-blue-400 shadow-lg"
                       style={{ left: "500px", width: "150px" }}
                     >
-                      {getFieldValue(item.fields, "Asesor")}
+                      {fieldStr(item.fields, "Asesor")}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
                       {formatDate(
-                        getFieldValue(item.fields, "FechaCompromisoComercial")
+                        fieldStr(item.fields, "FechaCompromisoComercial")
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                      {getFieldValue(item.fields, "Title")}
+                      {fieldStr(item.fields, "Title")}
                     </td>
                     <td className="px-4 py-3 text-sm font-bold text-gray-900 whitespace-nowrap">
                       {getPorcentajeAvance(item.fields)}%
@@ -830,7 +856,7 @@ const DashboardReal: React.FC<DashboardRealProps> = ({ items }) => {
                     {/* Fases ordenadas de F1 a F16 de izquierda a derecha */}
                     {Array.from({ length: 16 }, (_, i) => i + 1).map((num) => {
                       const porcentaje =
-                        getFieldValue(item.fields, `F${num}`) || "0%";
+                        fieldStr(item.fields, `F${num}`) || "0%";
                       return (
                         <td
                           key={`${item.id}-F${num}`}
